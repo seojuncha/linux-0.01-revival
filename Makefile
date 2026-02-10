@@ -12,7 +12,7 @@ AS	=gas
 LD	=gld
 LDFLAGS	=-s -x -M
 CC	=gcc
-CFLAGS	=-Wall -O -fstrength-reduce -fomit-frame-pointer -fcombine-regs
+CFLAGS	=-Wall -O -fstrength-reduce -fomit-frame-pointer
 CPP	=gcc -E -nostdinc -Iinclude
 
 ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
@@ -36,12 +36,12 @@ Image: boot/boot tools/system tools/build
 tools/build: tools/build.c
 	$(CC) $(CFLAGS) \
 	-o tools/build tools/build.c
-	chmem +65000 tools/build
+# chmem is not same with the current Linux, but in Minix.
+# chmem +65000 tools/build
 
 boot/head.o: boot/head.s
 
-tools/system:	boot/head.o init/main.o \
-		$(ARCHIVES) $(LIBS)
+tools/system:	boot/head.o init/main.o $(ARCHIVES) $(LIBS)
 	$(LD) $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
 	$(LIBS) \
@@ -63,8 +63,14 @@ boot/boot:	boot/boot.s tools/system
 	(echo -n "SYSSIZE = (";ls -l tools/system | grep system \
 		| cut -c25-31 | tr '\012' ' '; echo "+ 15 ) / 16") > tmp.s
 	cat boot/boot.s >> tmp.s
+
+  # Maybe worked.
+  # $ sudo apt install bin86
+  # $ as86 -0 -a boot.s -o boot.o
 	$(AS86) -o boot/boot.o tmp.s
 	rm -f tmp.s
+
+  # ld86 -0 -s -o boot boot.o
 	$(LD86) -s -o boot/boot boot/boot.o
 
 clean:

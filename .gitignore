@@ -1,0 +1,4 @@
+*.o
+tmp_make
+boot/boot
+tools/build

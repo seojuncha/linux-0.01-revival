@@ -6,13 +6,13 @@
 # unless it's something special (ie not a .c file).
 #
 
-AR	=gar
-AS	=gas
-LD	=gld
+AR	=ar
+AS	=as
+LD	=ld
 LDFLAGS	=-s -x
 CC	=gcc
-CFLAGS	=-Wall -O -fstrength-reduce -fomit-frame-pointer -fcombine-regs \
-	-finline-functions -mstring-insns -nostdinc -I../include
+CFLAGS	= -m32 -Wall -O -fstrength-reduce -fomit-frame-pointer \
+	-finline-functions -nostdinc -Wno-builtin-declaration-mismatch  -I../include
 CPP	=gcc -E -nostdinc -I../include
 
 .c.s:
@@ -42,3 +42,30 @@ dep:
 	cp tmp_make Makefile
 
 ### Dependencies:
+_exit.s _exit.o: _exit.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h
+close.s close.o: close.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h
+ctype.s ctype.o: ctype.c ../include/ctype.h
+dup.s dup.o: dup.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h
+errno.s errno.o: errno.c
+execve.s execve.o: execve.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h
+open.s open.o: open.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h ../include/stdarg.h
+setsid.s setsid.o: setsid.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h
+string.s string.o: string.c ../include/string.h
+wait.s wait.o: wait.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h ../include/sys/wait.h
+write.s write.o: write.c ../include/unistd.h ../include/sys/stat.h \
+ ../include/sys/types.h ../include/sys/times.h ../include/sys/utsname.h \
+ ../include/utime.h
