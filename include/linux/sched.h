@@ -151,6 +151,7 @@ extern void wake_up(struct task_struct ** p);
 #define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)
 #define _TSS(n) ((((unsigned long) n)<<4)+(FIRST_TSS_ENTRY<<3))
 #define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
+/*
 #define ltr(n) __asm__("ltr %%ax"::"a" (_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a" (_LDT(n)))
 #define str(n) \
@@ -159,12 +160,30 @@ __asm__("str %%ax\n\t" \
 	"shrl $4,%%eax" \
 	:"=a" (n) \
 	:"a" (0),"i" (FIRST_TSS_ENTRY<<3))
+  */
+
+#define ltr(n)  __asm__ volatile ("ltr  %%ax" :: "a" ((unsigned short)_TSS(n)) : "cc")
+#define lldt(n) __asm__ volatile ("lldt %%ax" :: "a" ((unsigned short)_LDT(n)) : "cc")
+#define str(n) do { \
+    unsigned short __v; \
+    __asm__ volatile ( \
+        "str  %%ax\n\t" \
+        "subw %1, %%ax\n\t" \
+        "shrw $4, %%ax" \
+        : "=a"(__v) \
+        : "i"((unsigned short)(FIRST_TSS_ENTRY<<3)) \
+        : "cc" \
+    ); \
+    (n) = __v; \
+} while (0)
+
 /*
  *	switch_to(n) should switch tasks to task nr n, first
  * checking that n isn't the current task, in which case it does nothing.
  * This also clears the TS-flag if the task we switched to has used
  * tha math co-processor latest.
  */
+/*
 #define switch_to(n) {\
 struct {long a,b;} __tmp; \
 __asm__("cmpl %%ecx,_current\n\t" \
@@ -179,9 +198,30 @@ __asm__("cmpl %%ecx,_current\n\t" \
 	::"m" (*&__tmp.a),"m" (*&__tmp.b), \
 	"m" (last_task_used_math),"d" _TSS(n),"c" ((long) task[n])); \
 }
+*/
+#define switch_to(n) do { \
+    struct __far_ptr { unsigned int off; unsigned short sel; } __attribute__((packed)) __tmp = {0, (unsigned short)_TSS(n)}; \
+    __asm__ volatile ( \
+        "cmpl %%ecx, _current\n\t" \
+        "je 1f\n\t" \
+        "xchgl %%ecx, _current\n\t" \
+        "ljmp *%0\n\t" \
+        "cmpl %%ecx, %1\n\t" \
+        "jne 1f\n\t" \
+        "clts\n" \
+        "1:" \
+        : \
+        : "m"(__tmp), \
+          "m"(last_task_used_math), \
+          "c"((long)task[n]) \
+        : "cc", "memory" \
+    ); \
+} while (0)
+
 
 #define PAGE_ALIGN(n) (((n)+0xfff)&0xfffff000)
 
+/*
 #define _set_base(addr,base) \
 __asm__("movw %%dx,%0\n\t" \
 	"rorl $16,%%edx\n\t" \
@@ -204,10 +244,50 @@ __asm__("movw %%dx,%0\n\t" \
 	  "m" (*((addr)+6)), \
 	  "d" (limit) \
 	:"dx")
+*/
 
+#define _set_base(addr, base) \
+__asm__ volatile ( \
+    "movw %%dx, %0\n\t" \
+    "rorl $16, %%edx\n\t" \
+    "movb %%dl, %1\n\t" \
+    "movb %%dh, %2" \
+    : "=m"(*((addr)+2)), \
+      "=m"(*((addr)+4)), \
+      "=m"(*((addr)+7)), \
+      "+d"(base) \
+    : \
+    : "cc" \
+)
+
+#define _set_limit(addr, limit) \
+__asm__ volatile ( \
+    "movw %%dx, %0\n\t" \
+    "rorl $16, %%edx\n\t" \
+    "movb %1, %%dh\n\t" \
+    "andb $0xf0, %%dh\n\t" \
+    "orb  %%dh, %%dl\n\t" \
+    "movb %%dl, %1" \
+    : "=m"(*(addr)), \
+      "+m"(*((addr)+6)), \
+      "+d"(limit) \
+    : \
+    : "cc" \
+)
+
+
+/*
 #define set_base(ldt,base) _set_base( ((char *)&(ldt)) , base )
 #define set_limit(ldt,limit) _set_limit( ((char *)&(ldt)) , (limit-1)>>12 )
+*/
 
+#define set_base(ldtp, base) \
+    _set_base(((char *)(ldtp)), (unsigned long)(base))
+
+#define set_limit(ldtp, limit) \
+    _set_limit(((char *)(ldtp)), (unsigned long)(((limit) - 1) >> 12))
+
+/*
 #define _get_base(addr) ({\
 unsigned long __base; \
 __asm__("movb %3,%%dh\n\t" \
@@ -219,12 +299,38 @@ __asm__("movb %3,%%dh\n\t" \
 	 "m" (*((addr)+4)), \
 	 "m" (*((addr)+7))); \
 __base;})
+*/
+#define _get_base(addr) ({ \
+    unsigned long __base; \
+    __asm__ volatile ( \
+        "movb %3, %%dh\n\t" \
+        "movb %2, %%dl\n\t" \
+        "shll $16, %%edx\n\t" \
+        "movw %1, %%dx" \
+        : "=d"(__base) \
+        : "m"(*((addr)+2)), "m"(*((addr)+4)), "m"(*((addr)+7)) \
+        : "cc" \
+    ); \
+    __base; \
+})
+
 
 #define get_base(ldt) _get_base( ((char *)&(ldt)) )
 
+/*
 #define get_limit(segment) ({ \
 unsigned long __limit; \
 __asm__("lsll %1,%0\n\tincl %0":"=r" (__limit):"r" (segment)); \
 __limit;})
+*/
+#define get_limit(segment) ({ \
+    unsigned long __limit; \
+    __asm__ volatile ("lsll %1, %0\n\tincl %0" \
+        : "=r"(__limit) \
+        : "r"(segment) \
+        : "cc" \
+    ); \
+    __limit; \
+})
 
 #endif

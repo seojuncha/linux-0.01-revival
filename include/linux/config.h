@@ -18,7 +18,7 @@
 #endif
 
 /* End of buffer memory. Must be 0xA0000, or > 0x100000, 4096-byte aligned */
-#if (HIGH_MEMORY>=0x600000)
+#if (HIGH_MEMORY >= 0x600000)
 #define BUFFER_END 0x200000
 #else
 #define BUFFER_END 0xA0000

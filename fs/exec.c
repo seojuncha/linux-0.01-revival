@@ -18,6 +18,7 @@ extern int sys_close(int fd);
  */
 #define MAX_ARG_PAGES 32
 
+/*
 #define cp_block(from,to) \
 __asm__("pushl $0x10\n\t" \
 	"pushl $0x17\n\t" \
@@ -28,27 +29,48 @@ __asm__("pushl $0x10\n\t" \
 	"pop %%es" \
 	::"c" (BLOCK_SIZE/4),"S" (from),"D" (to) \
 	:"cx","di","si")
+*/
+
+#define cp_block(from, to_off) do {                                      \
+    unsigned long __n   = (unsigned long)(BLOCK_SIZE/4);                 \
+    const char  *__src  = (const char *)(from);                          \
+    unsigned long __dst = (unsigned long)(to_off);  /* ES 기준 offset */  \
+    __asm__ volatile (                                                   \
+        "push %%es\n\t"                                                  \
+        "movw $0x17, %%ax\n\t"                                           \
+        "movw %%ax, %%es\n\t"                                            \
+        "cld\n\t"                                                        \
+        "rep\n\t"                                                        \
+        "movsl\n\t"                                                      \
+        "pop %%es"                                                       \
+        : "+c"(__n), "+S"(__src), "+D"(__dst)                            \
+        :                                                                \
+        : "eax", "cc", "memory"                                          \
+    );                                                                   \
+} while (0)
+
 
 /*
  * read_head() reads blocks 1-6 (not 0). Block 0 has already been
  * read for header information.
  */
-int read_head(struct m_inode * inode,int blocks)
+int read_head(struct m_inode *inode, int blocks)
 {
-	struct buffer_head * bh;
-	int count;
+  struct buffer_head *bh;
+  int count;
 
-	if (blocks>6)
-		blocks=6;
-	for(count = 0 ; count<blocks ; count++) {
-		if (!inode->i_zone[count+1])
-			continue;
-		if (!(bh=bread(inode->i_dev,inode->i_zone[count+1])))
-			return -1;
-		cp_block(bh->b_data,count*BLOCK_SIZE);
-		brelse(bh);
-	}
-	return 0;
+  if (blocks > 6)
+    blocks = 6;
+
+  for (count = 0; count < blocks; count++) {
+    if (!inode->i_zone[count+1])
+      continue;
+    if (!(bh = bread(inode->i_dev, inode->i_zone[count+1])))
+      return -1;
+    cp_block(bh->b_data, count*BLOCK_SIZE);
+    brelse(bh);
+  }
+  return 0;
 }
 
 int read_ind(int dev,int ind,long size,unsigned long offset)
@@ -65,9 +87,9 @@ int read_ind(int dev,int ind,long size,unsigned long offset)
 	if (!(ih=bread(dev,ind)))
 		return -1;
 	table = (unsigned short *) ih->b_data;
-	while (size>0) {
-		if (block=*(table++))
-			if (!(bh=bread(dev,block))) {
+	while (size > 0) {
+		if ((block = *(table++)))
+			if (!(bh = bread(dev, block))) {
 				brelse(ih);
 				return -1;
 			} else {
@@ -147,7 +169,7 @@ static int count(char ** argv)
 	int i=0;
 	char ** tmp;
 
-	if (tmp = argv)
+	if ((tmp = argv))
 		while (get_fs_long((unsigned long *) (tmp++)))
 			i++;
 
@@ -201,10 +223,12 @@ static unsigned long change_ldt(unsigned long text_size,unsigned long * page)
 	data_limit = 0x4000000;
 	code_base = get_base(current->ldt[1]);
 	data_base = code_base;
-	set_base(current->ldt[1],code_base);
-	set_limit(current->ldt[1],code_limit);
-	set_base(current->ldt[2],data_base);
-	set_limit(current->ldt[2],data_limit);
+
+	set_base(&current->ldt[1], code_base);
+	set_limit(&current->ldt[1], code_limit);
+	set_base(&current->ldt[2], data_base);
+	set_limit(&current->ldt[2], data_limit);
+
 /* make sure fs points to the NEW data segment */
 	__asm__("pushl $0x17\n\tpop %%fs"::);
 	data_base += data_limit;

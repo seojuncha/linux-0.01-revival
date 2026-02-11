@@ -1,9 +1,9 @@
-AR	=gar
-AS	=gas
-CC	=gcc
-LD	=gld
-CFLAGS	=-m32 -Wall -O -Wno-builtin-declaration-mismatch -fstrength-reduce -fomit-frame-pointer -nostdinc -I../include
-CPP	=gcc -E -nostdinc -I../include
+AR	= ar
+AS	= as
+CC	= cc
+LD	= ld
+CFLAGS	=-m32 -fno-pie -no-pie -Wall -O -Wno-builtin-declaration-mismatch -fstrength-reduce -fomit-frame-pointer -nostdinc -I../include
+CPP	= gcc -E -nostdinc -I../include
 
 .c.s:
 	$(CC) $(CFLAGS) \
@@ -19,7 +19,7 @@ OBJS=	open.o read_write.o inode.o file_table.o buffer.o super.o \
 	bitmap.o fcntl.o ioctl.o tty_ioctl.o truncate.o
 
 fs.o: $(OBJS)
-	$(LD) -r -o fs.o $(OBJS)
+	$(LD) -m elf_i386 -r -o fs.o $(OBJS)
 
 clean:
 	rm -f core *.o *.a tmp_make

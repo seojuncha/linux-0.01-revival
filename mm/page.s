@@ -3,6 +3,7 @@
  * the real work is done in mm.c
  */
 
+.code32
 .globl _page_fault
 
 _page_fault:

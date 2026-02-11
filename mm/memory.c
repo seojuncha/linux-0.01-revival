@@ -1,5 +1,4 @@
 #include <signal.h>
-
 #include <linux/config.h>
 #include <linux/head.h>
 #include <linux/kernel.h>
@@ -8,7 +7,7 @@
 int do_exit(long code);
 
 #define invalidate() \
-__asm__("movl %%eax,%%cr3"::"a" (0))
+  __asm__("movl %%eax,%%cr3"::"a" (0))
 
 #if (BUFFER_END < 0x100000)
 #define LOW_MEM 0x100000
@@ -25,8 +24,21 @@ __asm__("movl %%eax,%%cr3"::"a" (0))
 #error "Won't work"
 #endif
 
+/*
 #define copy_page(from,to) \
-__asm__("cld ; rep ; movsl"::"S" (from),"D" (to),"c" (1024):"cx","di","si")
+__asm__ volatile ("cld ; rep ; movsl"::"S" (from),"D" (to),"c" (1024):"cx","di","si")
+*/
+
+#define copy_page(from,to) \
+    __asm__ volatile ( \
+        "cld\n\t" \
+        "rep\n\t" \
+        "movsl" \
+        : "+S"(from), "+D"(to) \
+        : "c"(1024) \
+        : "cc", "memory" \
+    )
+
 
 static unsigned short mem_map [ PAGING_PAGES ] = {0,};
 
@@ -34,6 +46,7 @@ static unsigned short mem_map [ PAGING_PAGES ] = {0,};
  * Get physical address of first (actually last :-) free page, and mark it
  * used. If no free pages left, return 0.
  */
+/*
 unsigned long get_free_page(void)
 {
 register unsigned long __res asm("ax");
@@ -55,6 +68,42 @@ __asm__("std ; repne ; scasw\n\t"
 	:"di","cx","dx");
 return __res;
 }
+*/
+
+unsigned long get_free_page(void)
+{
+    unsigned long __res;
+
+    unsigned long pages = PAGING_PAGES;
+    unsigned short *p = (unsigned short *)(mem_map + PAGING_PAGES - 1);
+
+    __asm__ volatile (
+        "std\n\t"
+        "repne\n\t"
+        "scasw\n\t"
+        "jne 1f\n\t"
+        "movw $1, 2(%%edi)\n\t"
+        "sall $12, %%ecx\n\t"
+        "movl %%ecx, %%edx\n\t"
+        "addl %2, %%edx\n\t"
+        "movl $1024, %%ecx\n\t"
+        "leal 4092(%%edx), %%edi\n\t"
+        "rep\n\t"
+        "stosl\n\t"
+        "movl %%edx, %%eax\n"
+        "1:\n\t"
+        "cld"
+        : "=&a"(__res),           /* early-clobber: EAX는 중간에도 바뀜 */
+          "+c"(pages),
+          "+D"(p)
+        : "i"(LOW_MEM),
+          "0"(0)                  /* EAX=0 (AX=0)로 scasw 비교값 제공 */
+        : "edx", "cc", "memory"
+    );
+
+    return __res;
+}
+
 
 /*
  * Free a page of memory at physical address 'addr'. Used by
