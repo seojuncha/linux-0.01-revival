@@ -37,21 +37,18 @@ int sys_access(const char * filename,int mode)
 	mode &= 0007;
 	if (!(inode=namei(filename)))
 		return -EACCES;
-
 	res = inode->i_mode & 0777;
 	iput(inode);
-
 	if (!(current->euid && current->uid)) {
 		if (res & 0111)
 			res = 0777;
 		else
 			res = 0666;
-  }
+	}
 	if (current->euid == inode->i_uid)
 		res >>= 6;
 	else if (current->egid == inode->i_gid)
 		res >>= 6;
-
 	if ((res & 0007 & mode) == mode)
 		return 0;
 	return -EACCES;
@@ -93,15 +90,13 @@ int sys_chmod(const char * filename,int mode)
 
 	if (!(inode=namei(filename)))
 		return -ENOENT;
-
 	if (current->uid && current->euid) {
 		if (current->uid!=inode->i_uid && current->euid!=inode->i_uid) {
 			iput(inode);
 			return -EACCES;
-		} else { 
+		} else 
 			mode = (mode & 0777) | (inode->i_mode & 07000);
-    }
-  }
+	}
 	inode->i_mode = (mode & 07777) | (inode->i_mode & ~07777);
 	inode->i_dirt = 1;
 	iput(inode);
@@ -156,15 +151,14 @@ int sys_open(const char * filename,int flag,int mode)
 				current->tty = MINOR(inode->i_zone[0]);
 				tty_table[current->tty].pgrp = current->pgrp;
 			}
-		} else if (MAJOR(inode->i_zone[0])==5) {
+		} else if (MAJOR(inode->i_zone[0])==5)
 			if (current->tty<0) {
 				iput(inode);
 				current->filp[fd]=NULL;
 				f->f_count=0;
 				return -EPERM;
 			}
-    }
-  }
+	}
 	f->f_mode = inode->i_mode;
 	f->f_flags = flag;
 	f->f_count = 1;

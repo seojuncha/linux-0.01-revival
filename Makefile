@@ -4,15 +4,16 @@
 # remove them from the CFLAGS defines.
 #
 
-AS86	=as -0 -a
-CC86	=cc -0
-LD86	=ld -0
+AS86	=as86 -0 
+CC86	=cc86 -0
+LD86	=ld86 -0
 
-AS	=gas
-LD	=gld
-LDFLAGS	=-s -x -M
+AS	=as --32 
+LD	=ld -m  elf_i386 
+LDFLAGS	=-M -Ttext 0 -e startup_32
+#LDFLAGS	=-s -x -M -Ttext 0 -e startup_32
 CC	=gcc
-CFLAGS	=-Wall -O -fstrength-reduce -fomit-frame-pointer
+CFLAGS	=-Wall -O -std=gnu89 -fstrength-reduce -fomit-frame-pointer -fno-stack-protector -fno-builtin -g -m32
 CPP	=gcc -E -nostdinc -Iinclude
 
 ARCHIVES=kernel/kernel.o mm/mm.o fs/fs.o
@@ -22,7 +23,7 @@ LIBS	=lib/lib.a
 	$(CC) $(CFLAGS) \
 	-nostdinc -Iinclude -S -o $*.s $<
 .s.o:
-	$(AS) -c -o $*.o $<
+	$(AS) --32 -o $*.o $<
 .c.o:
 	$(CC) $(CFLAGS) \
 	-nostdinc -Iinclude -c -o $*.o $<
@@ -30,23 +31,24 @@ LIBS	=lib/lib.a
 all:	Image
 
 Image: boot/boot tools/system tools/build
-	tools/build boot/boot tools/system > Image
-	sync
+	objcopy  -O binary -R .note -R .comment tools/system tools/system.bin
+	tools/build boot/boot tools/system.bin > Image
+#	sync
 
 tools/build: tools/build.c
 	$(CC) $(CFLAGS) \
 	-o tools/build tools/build.c
-# chmem is not same with the current Linux, but in Minix.
-# chmem +65000 tools/build
+	#chmem +65000 tools/build
 
 boot/head.o: boot/head.s
 
-tools/system:	boot/head.o init/main.o $(ARCHIVES) $(LIBS)
+tools/system:	boot/head.o init/main.o \
+		$(ARCHIVES) $(LIBS)
 	$(LD) $(LDFLAGS) boot/head.o init/main.o \
 	$(ARCHIVES) \
 	$(LIBS) \
 	-o tools/system > System.map
-
+	
 kernel/kernel.o:
 	(cd kernel; make)
 
@@ -60,22 +62,25 @@ lib/lib.a:
 	(cd lib; make)
 
 boot/boot:	boot/boot.s tools/system
-	(echo -n "SYSSIZE = (";ls -l tools/system | grep system \
-		| cut -c25-31 | tr '\012' ' '; echo "+ 15 ) / 16") > tmp.s
+	(echo -n "SYSSIZE = (";stat -c%s tools/system \
+		| tr '\012' ' '; echo "+ 15 ) / 16") > tmp.s	
 	cat boot/boot.s >> tmp.s
-
-  # Maybe worked.
-  # $ sudo apt install bin86
-  # $ as86 -0 -a boot.s -o boot.o
 	$(AS86) -o boot/boot.o tmp.s
 	rm -f tmp.s
-
-  # ld86 -0 -s -o boot boot.o
 	$(LD86) -s -o boot/boot boot/boot.o
+	
+run:
+	qemu-system-i386 -drive format=raw,file=Image,index=0,if=floppy -boot a -hdb hd_oldlinux.img -m 8 -machine pc-i440fx-2.5
+
+run-curses:
+	qemu-system-i386 -display curses -drive format=raw,file=Image,index=0,if=floppy -boot a -hdb hd_oldlinux.img -m 8 -machine pc-i440fx-2.5
+	
+dump:
+	objdump -D --disassembler-options=intel tools/system > System.dum
 
 clean:
 	rm -f Image System.map tmp_make boot/boot core
-	rm -f init/*.o boot/*.o tools/system tools/build
+	rm -f init/*.o boot/*.o tools/system tools/build tools/system.bin
 	(cd mm;make clean)
 	(cd fs;make clean)
 	(cd kernel;make clean)
@@ -83,7 +88,7 @@ clean:
 
 backup: clean
 	(cd .. ; tar cf - linux | compress16 - > backup.Z)
-	sync
+#	sync
 
 dep:
 	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
@@ -100,3 +105,4 @@ init/main.o : init/main.c include/unistd.h include/sys/stat.h \
   include/linux/sched.h include/linux/head.h include/linux/fs.h \
   include/linux/mm.h include/asm/system.h include/asm/io.h include/stddef.h \
   include/stdarg.h include/fcntl.h 
+

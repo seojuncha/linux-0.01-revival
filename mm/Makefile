@@ -1,16 +1,16 @@
-CC=gcc
-CFLAGS=-m32 -O -fno-pie -no-pie -Wall -fstrength-reduce -fomit-frame-pointer \
-	-finline-functions -nostdinc -I../include
-AS=as
-AR=ar
-LD=ld
-CPP=gcc -E -nostdinc -I../include
+CC	=gcc
+CFLAGS	=-Wall -O -std=gnu89 -fstrength-reduce  -fomit-frame-pointer -m32 \
+	-fno-stack-protector -finline-functions -nostdinc -fno-builtin -g -I../include
+AS	=as --32
+AR	=ar 
+LD	=ld -m  elf_i386 
+CPP	=gcc -E -nostdinc -I../include
 
 .c.o:
 	$(CC) $(CFLAGS) \
 	-c -o $*.o $<
 .s.o:
-	$(AS) --32 -o $*.o $<
+	$(AS) -o $*.o $<
 .c.s:
 	$(CC) $(CFLAGS) \
 	-S -o $*.s $<
@@ -20,7 +20,7 @@ OBJS	= memory.o page.o
 all: mm.o
 
 mm.o: $(OBJS)
-	$(LD) -m elf_i386 -r -o mm.o $(OBJS)
+	$(LD) -r -o mm.o $(OBJS)
 
 clean:
 	rm -f core *.o *.a tmp_make

@@ -6,20 +6,20 @@
 # unless it's something special (ie not a .c file).
 #
 
-AR	= ar
-AS	= as
-LD	= ld
-LDFLAGS	= -s -x
-CC	= gcc
-CFLAGS	=-m32 -Wall -fno-pie -no-pie -O -fstrength-reduce -fomit-frame-pointer \
-	-finline-functions -nostdinc -I../include
-CPP	= gcc -E -nostdinc -I../include
+AR	=ar
+AS	=as --32
+LD	=ld -m  elf_i386 
+LDFLAGS	=-g #-s -x
+CC	=gcc
+CFLAGS	=-Wall -O -std=gnu89 -fstrength-reduce -fomit-frame-pointer -m32 \
+	-finline-functions -fno-stack-protector -nostdinc -fno-builtin -g -I../include
+CPP	=gcc -E -nostdinc -I../include
 
 .c.s:
 	$(CC) $(CFLAGS) \
 	-S -o $*.s $<
 .s.o:
-	$(AS) -c -o $*.o $<
+	$(AS) -o $*.o $<
 .c.o:
 	$(CC) $(CFLAGS) \
 	-c -o $*.o $<

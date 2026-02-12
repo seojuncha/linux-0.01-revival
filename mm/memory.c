@@ -1,13 +1,21 @@
 #include <signal.h>
+
 #include <linux/config.h>
 #include <linux/head.h>
 #include <linux/kernel.h>
+#include <linux/mm.h>
 #include <asm/system.h>
 
 int do_exit(long code);
 
-#define invalidate() \
-  __asm__("movl %%eax,%%cr3"::"a" (0))
+inline void invalidate()
+{
+	int d0;
+	__asm__ __volatile(
+		"movl %%eax,%%cr3"
+		:"=&a" (d0)
+		:"0" (0) );
+}
 
 #if (BUFFER_END < 0x100000)
 #define LOW_MEM 0x100000
@@ -24,21 +32,16 @@ int do_exit(long code);
 #error "Won't work"
 #endif
 
-/*
-#define copy_page(from,to) \
-__asm__ volatile ("cld ; rep ; movsl"::"S" (from),"D" (to),"c" (1024):"cx","di","si")
-*/
-
-#define copy_page(from,to) \
-    __asm__ volatile ( \
-        "cld\n\t" \
-        "rep\n\t" \
-        "movsl" \
-        : "+S"(from), "+D"(to) \
-        : "c"(1024) \
-        : "cc", "memory" \
-    )
-
+inline void copy_page(unsigned long from,unsigned long to)
+{
+int d0,d1,d2;
+__asm__ __volatile("cld\n\t"
+	"rep\n\t"
+	"movsl\n\t"
+	:"=&c" (d0), "=&S" (d1), "=&D" (d2)
+	:"0" (PAGE_SIZE/4),"1" (from),"2" (to)
+	:"memory");
+}
 
 static unsigned short mem_map [ PAGING_PAGES ] = {0,};
 
@@ -46,12 +49,11 @@ static unsigned short mem_map [ PAGING_PAGES ] = {0,};
  * Get physical address of first (actually last :-) free page, and mark it
  * used. If no free pages left, return 0.
  */
-/*
 unsigned long get_free_page(void)
 {
-register unsigned long __res asm("ax");
+register unsigned long __res;
 
-__asm__("std ; repne ; scasw\n\t"
+__asm__ __volatile__("std ; repne ; scasw\n\t"
 	"jne 1f\n\t"
 	"movw $1,2(%%edi)\n\t"
 	"sall $12,%%ecx\n\t"
@@ -65,45 +67,9 @@ __asm__("std ; repne ; scasw\n\t"
 	:"=a" (__res)
 	:"0" (0),"i" (LOW_MEM),"c" (PAGING_PAGES),
 	"D" (mem_map+PAGING_PAGES-1)
-	:"di","cx","dx");
+	:"dx");
 return __res;
 }
-*/
-
-unsigned long get_free_page(void)
-{
-    unsigned long __res;
-
-    unsigned long pages = PAGING_PAGES;
-    unsigned short *p = (unsigned short *)(mem_map + PAGING_PAGES - 1);
-
-    __asm__ volatile (
-        "std\n\t"
-        "repne\n\t"
-        "scasw\n\t"
-        "jne 1f\n\t"
-        "movw $1, 2(%%edi)\n\t"
-        "sall $12, %%ecx\n\t"
-        "movl %%ecx, %%edx\n\t"
-        "addl %2, %%edx\n\t"
-        "movl $1024, %%ecx\n\t"
-        "leal 4092(%%edx), %%edi\n\t"
-        "rep\n\t"
-        "stosl\n\t"
-        "movl %%edx, %%eax\n"
-        "1:\n\t"
-        "cld"
-        : "=&a"(__res),           /* early-clobber: EAX는 중간에도 바뀜 */
-          "+c"(pages),
-          "+D"(p)
-        : "i"(LOW_MEM),
-          "0"(0)                  /* EAX=0 (AX=0)로 scasw 비교값 제공 */
-        : "edx", "cc", "memory"
-    );
-
-    return __res;
-}
-
 
 /*
  * Free a page of memory at physical address 'addr'. Used by
@@ -129,7 +95,6 @@ int free_page_tables(unsigned long from,unsigned long size)
 {
 	unsigned long *pg_table;
 	unsigned long * dir, nr;
-
 	if (from & 0x3fffff)
 		panic("free_page_tables called with wrong alignment");
 	if (!from)
@@ -287,7 +252,7 @@ void do_no_page(unsigned long error_code,unsigned long address)
 {
 	unsigned long tmp;
 
-	if (tmp=get_free_page())
+	if ((tmp=get_free_page()))
 		if (put_page(tmp,address))
 			return;
 	do_exit(SIGSEGV);

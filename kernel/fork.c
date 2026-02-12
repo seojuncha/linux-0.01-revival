@@ -13,6 +13,9 @@
 
 extern void write_verify(unsigned long address);
 
+/* It is necessary that there is no warning. */
+extern void memcpy(struct task_struct *, struct task_struct *, long int);
+
 long last_pid=0;
 
 void verify_area(void * addr,int size)
@@ -70,7 +73,11 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 	p = (struct task_struct *) get_free_page();
 	if (!p)
 		return -EAGAIN;
+#if 0 /* This statement breaks *p memory (gcc 4.4.5). */
 	*p = *current;	/* NOTE! this doesn't copy the supervisor stack */
+#else
+	memcpy(p, current, sizeof(struct task_struct));
+#endif
 	p->state = TASK_RUNNING;
 	p->pid = last_pid;
 	p->father = current->pid;
@@ -109,7 +116,7 @@ int copy_process(int nr,long ebp,long edi,long esi,long gs,long none,
 		return -EAGAIN;
 	}
 	for (i=0; i<NR_OPEN;i++)
-		if (f=p->filp[i])
+		if ((f=p->filp[i]))
 			f->f_count++;
 	if (current->pwd)
 		current->pwd->i_count++;
