@@ -15,3 +15,5 @@ Image
 System.map
 hd_oldlinux.img
 debug.log
+.cache
+compile_commands.json
