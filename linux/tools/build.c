@@ -6,7 +6,6 @@
 #include <string.h>
 
 #define MINIX_HEADER 32
-#define GCC_HEADER 1024
 
 void die(char *str)
 {
@@ -16,7 +15,7 @@ void die(char *str)
 
 void usage(void)
 {
-	die("Usage: build boot system [> image]");
+  die("Usage: build boot system [> image]");
 }
 
 int main(int argc, char **argv)
@@ -27,10 +26,10 @@ int main(int argc, char **argv)
   if (argc != 3)
     usage();
 
-  for (i=0;i<sizeof buf; i++)
-    buf[i]=0;
+  for (i = 0; i < sizeof buf; i++)
+    buf[i] = 0;
 
-  if ((id=open(argv[1],O_RDONLY,0))<0)
+  if ((id=open(argv[1],O_RDONLY, 0))<0)
     die("Unable to open 'boot'");
 
   if (read(id,buf,MINIX_HEADER) != MINIX_HEADER)
@@ -48,24 +47,24 @@ int main(int argc, char **argv)
   if (((long *) buf)[7] != 0)
     die("Illegal symbol table in 'boot'");
 
-  i = read(id,buf,sizeof buf);
+  i = read(id, buf,sizeof buf);
   fprintf(stderr,"Boot sector %d bytes.\n",i);
-  if (i>510)
+  if (i > 510)
     die("Boot block may not exceed 510 bytes");
 
-  buf[510]=0x55;
-  buf[511]=0xAA;
+  buf[510] = 0x55;
+  buf[511] = 0xAA;
 
-  i=write(1,buf,512);
-  if (i!=512)
+  i=write(1, buf, 512);
+  if (i != 512)
     die("Write call failed");
   close (id);
-	
-  if ((id=open(argv[2],O_RDONLY,0))<0)
+  
+  if ((id = open(argv[2], O_RDONLY, 0)) < 0)
     die("Unable to open 'system'");
 
-  for (i=0 ; (c=read(id,buf,sizeof buf))>0 ; i+=c )
-    if (write(1,buf,c)!=c)
+  for (i = 0 ; (c = read(id, buf, sizeof buf)) > 0 ; i += c )
+    if (write(1, buf, c) != c)
       die("Write call failed");
 
   /* only needed by qemu. ( qemu may not read last sector if
