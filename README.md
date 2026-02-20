@@ -1,13 +1,15 @@
 ```bash
 $ sudo apt update
-$ sudo apt install -y git wget
+$ sudo apt install -y git wget bear
 $ sudo apt install -y build-essential libc-dev bin86 gcc-multilib g++-multilib
-$ 
 ```
 
 Compile 
 ```bash
+# Normal compile
 $ make
+# Produce compile_commands.json
+$ bear -- make
 ```
 
 Compile Output

@@ -40,13 +40,13 @@ typedef unsigned int sigset_t;		/* 32 bits */
 #define SIG_UNBLOCK        1	/* for unblocking signals */
 #define SIG_SETMASK        2	/* for setting the signal mask */
 
-#define SIG_DFL		((void (*)(int))0)	/* default signal handling */
-#define SIG_IGN		((void (*)(int))1)	/* ignore signal */
+#define SIG_DFL ((void (*)(int))0)	/* default signal handling */
+#define SIG_IGN ((void (*)(int))1)	/* ignore signal */
 
 struct sigaction {
-	void (*sa_handler)(int);
-	sigset_t sa_mask;
-	int sa_flags;
+        void (*sa_handler)(int);
+        sigset_t sa_mask;
+        int sa_flags;
 };
 
 void (*signal(int _sig, void (*_func)(int)))(int);

@@ -1,5 +1,6 @@
 Compile Boch 2.6.11
-```
+
+```bash
 $ sudo apt install libsdl2-dev libncurses-dev nasm unzip bison flex pkg-config libreadline-dev
 
 $ ./configure \
