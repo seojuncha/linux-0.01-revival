@@ -5,6 +5,9 @@
  * the page directory will exist. The startup code will be overwritten by
  * the page directory.
  */
+
+ # This code runs in Proteced mode.
+
 .code32
 .text
 
@@ -12,33 +15,66 @@
 
 pg_dir:
 startup_32:
-        movl $0x10,%eax
-        mov %ax,%ds
-        mov %ax,%es
-        mov %ax,%fs
-        mov %ax,%gs
-        lss stack_start,%esp
+        # movl (mov Long): forces 32-bit copy
+        # EAX = 0x0000_0010
+        movl $0x10, %eax
+
+        # DS, ES, FS, GS = 0x0010
+        mov %ax, %ds
+        mov %ax, %es
+        mov %ax, %fs
+        mov %ax, %gs
+
+        # lss (Load Segment Selector): Load far pointer from memory using Stack segment
+        #   stack_start (src) : in kernel/sched.c, 32-bit offset and 16-bit selector
+        #   esp (dst) : 32-bit register
+        # Read 4-byte into ESP, then read 2-byte SS
+        lss stack_start, %esp
+
         call setup_idt
         call setup_gdt
-        movl $0x10,%eax         # reload all the segment registers
-        mov %ax,%ds             # after changing gdt. CS was already
-        mov %ax,%es             # reloaded in 'setup_gdt'
-        mov %ax,%fs
-        mov %ax,%gs
-        lss stack_start,%esp
-        xorl %eax,%eax
+
+        movl $0x10, %eax         # reload all the segment registers
+        mov %ax, %ds             # after changing gdt. CS was already
+        mov %ax, %es             # reloaded in 'setup_gdt'
+        mov %ax, %fs
+        mov %ax, %gs
+
+        lss stack_start, %esp
+
+        # xorl (xor Long)
+        xorl %eax, %eax
+
 1:
+        # EAX = EAX + 1
         incl %eax               # check that A20 really IS enabled
-        movl %eax,0x000000
-        cmpl %eax,0x100000
+        # EAX = 0x0000_0000
+        movl %eax, 0x000000
+        # MEM[0x0010_0000] - EAX
+        cmpl %eax, 0x100000
+
         je 1b
-        movl %cr0,%eax          # check math chip
-        andl $0x80000011,%eax   # Save PG,ET,PE
-        testl $0x10,%eax
-        jne 1f                  # ET is set - 387 is present
-        orl $4,%eax             # else set emulate bit
+
+        # Store CR0 to EAX
+        movl %cr0, %eax          # check math chip
+
+        # Mask bit[31, 4, 0] of EAX then save it to EAX
+        # CR0[0] = PE bit (Protection mode Enabled)
+        # CR0[4] = ET bit (Presence of of 80387)
+        # CR0[31] = PG bit (Paging Disabled)
+        andl $0x80000011, %eax   # Save PG,ET,PE
+
+        # ET bit is set?
+        testl $0x10, %eax
+
+        jne 1f                   # ET is set - 387 is present
+        orl $4, %eax             # else set emulate bit
+
 1:
-        movl %eax,%cr0
+        # Restore EAX to CR0
+        movl %eax, %cr0
+
+        # Go after_page_tables
         jmp after_page_tables
 
 /*
@@ -53,17 +89,19 @@ startup_32:
  *  written by the page tables.
  */
 setup_idt:
-        lea ignore_int,%edx
-        movl $0x00080000,%eax
-        movw %dx,%ax            /* selector = 0x0008 = cs */
-        movw $0x8E00,%dx        /* interrupt gate - dpl=0, present */
+        # lea: Loads the address of a memory operand into a register.
+        lea ignore_int, %edx
+        movl $0x00080000, %eax
+        movw %dx, %ax            /* selector = 0x0008 = cs */
+        movw $0x8E00, %dx        /* interrupt gate - dpl=0, present */
 
-        lea idt,%edi
-        mov $256,%ecx
+        lea idt, %edi
+        mov $256, %ecx
+
 rp_sidt:
-        movl %eax,(%edi)
-        movl %edx,4(%edi)
-        addl $8,%edi
+        movl %eax, (%edi)
+        movl %edx, 4(%edi)
+        addl $8, %edi
         dec %ecx
         jne rp_sidt
         lidt idt_descr
@@ -80,6 +118,8 @@ rp_sidt:
  *  This routine will beoverwritten by the page tables.
  */
 setup_gdt:
+        # gdt_descr (GDT Descriptor)
+        # lgdt (Load GDT): Instruction to load the GDT. The operand data will be stored in GDTR.
         lgdt gdt_descr
         ret
 
@@ -110,7 +150,7 @@ L6:
 .align 2
 ignore_int:
         incb 0xb8000+160                # put something on the screen
-        movb $2,0xb8000+161             # so that we know something
+        movb $2, 0xb8000+161            # so that we know something
         iret                            # happened
 
 
@@ -140,46 +180,46 @@ ignore_int:
  */
 .align 2
 setup_paging:
-        movl $1024*3,%ecx
-        xorl %eax,%eax
-        xorl %edi,%edi                  /* pg_dir is at 0x000 */
-        cld;rep;stosl
-        movl $pg0+7,pg_dir              /* set present bit/user r/w */
-        movl $pg1+7,pg_dir+4            /*  --------- " " --------- */
-        movl $pg1+4092,%edi
-        movl $0x7ff007,%eax             /*  8Mb - 4096 + 7 (r/w user,p) */
+        movl $1024 * 3, %ecx
+        xorl %eax, %eax
+        xorl %edi, %edi                  /* pg_dir is at 0x000 */
+        cld; rep; stosl
+        movl $pg0 + 7, pg_dir              /* set present bit/user r/w */
+        movl $pg1 + 7, pg_dir + 4            /*  --------- " " --------- */
+        movl $pg1 + 4092, %edi
+        movl $0x7ff007, %eax             /*  8Mb - 4096 + 7 (r/w user,p) */
         std
 
 1:
         stosl                   /* fill pages backwards - more efficient :-) */
-        subl $0x1000,%eax
+        subl $0x1000, %eax
         jge 1b
-        xorl %eax,%eax          /* pg_dir is at 0x0000 */
-        movl %eax,%cr3          /* cr3 - page directory start */
-        movl %cr0,%eax
-        orl $0x80000000,%eax
-        movl %eax,%cr0          /* set paging (PG) bit */
+        xorl %eax, %eax          /* pg_dir is at 0x0000 */
+        movl %eax, %cr3          /* cr3 - page directory start */
+        movl %cr0, %eax
+        orl $0x80000000, %eax
+        movl %eax, %cr0          /* set paging (PG) bit */
         ret                     /* this also flushes prefetch-queue */
 
 .align 2
 .word 0
 idt_descr:
-  .word 256*8-1         # idt contains 256 entries
+  .word 256 * 8 - 1         # idt contains 256 entries
   .long idt
 
 .align 2
 .word 0
 gdt_descr:
-  .word 256*8-1         # so does gdt (not that that's any
+  .word 256 * 8 - 1         # so does gdt (not that that's any
   .long gdt             # magic number, but it works for me :^)
 
 .align 8
 idt:
-  .fill 256,8,0         # idt is uninitialized
+  .fill 256, 8, 0         # idt is uninitialized
 
 gdt:
   .quad 0x0000000000000000      /* NULL descriptor */
   .quad 0x00c09a00000007ff      /* 8Mb */
   .quad 0x00c09200000007ff      /* 8Mb */
   .quad 0x0000000000000000      /* TEMPORARY - don't use */
-  .fill 252,8,0                 /* space for LDT's and TSS's etc */
+  .fill 252, 8, 0               /* space for LDT's and TSS's etc */
