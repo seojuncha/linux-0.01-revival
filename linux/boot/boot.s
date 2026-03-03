@@ -52,42 +52,66 @@ begbss:
 
 BOOTSEG = 0x07c0
 INITSEG = 0x9000
-SYSSEG  = 0x1000            ; system loaded at 0x10000 (65536).
-ENDSEG    = SYSSEG + SYSSIZE
+SYSSEG = 0x1000                 ; system loaded at 0x10000 (65536).
+ENDSEG = SYSSEG + SYSSIZE
 
 entry start
 start:
         ; AX = BOOTSEG (0x07c0)
-        mov ax, #BOOTSEG        ; AX=0x07C0
+        mov ax, #BOOTSEG
         ; DS = AX (0x07c0)
-        mov ds, ax              ; DS=0x07C1
+        mov ds, ax
         ; AX = INITSEG (0x9000)
-        mov ax, #INITSEG        ; AX=0x9000
-        ; ES = AX (0x9000)
-        mov es, ax              ; ES=0x9000
-        ; CX = 256 (number of words == 512 bytes)
-        mov cx, #256            ; CX=256
-        ; SI = 0
-        sub si, si              ; SI=0
-        ; DI = 0
-        sub di, di              ; DI=0
+        mov ax, #INITSEG
+        ; ES=AX(0x9000)
+        mov es, ax
+        ; CX=256 (number of words == 512 bytes)
+        mov cx, #256
+        ; SI=0
+        sub si, si
+        ; DI=0
+        sub di, di
         ; Repeatedly move word from DS:SI to ES:DI, CX times(256)
         rep
-        movw                  ; Moves [DS:SI] -> [ES:DI], SI and DI increment by 2, repeat CX times (CX decrements to 0)
+        ; Moves [DS:SI] -> [ES:DI], SI and DI increment by 2, repeat CX times (CX decrements to 0)
+        movw                  
         ; Far jump to go:INITSEG
-        jmpi go, INITSEG        ; IP=offset(go), CS=INITSEG (0x9000). All other registers unchanged
+        ; IP=offset(go), CS=INITSEG (0x9000). All other registers unchanged
+        jmpi go, INITSEG
 
 go:
+        ; AX, CS, DS, ES, SS = 0x9000
+        ; SP = 0x400(1024)
         mov ax, cs
         mov ds, ax
         mov es, ax
         mov ss, ax
         mov sp, #0x400        ; arbitrary value >>512
 
+        ; NOTE_1: Now, prepare to print the "Loading system ..."
+        ;       INT 0x10 : Video Input/Output Interrupts
+        ;         AH: Function Code
+        ;         AL, BH, BL, CX, DX: Parameters 
+        ; NOTE_2: Read the Ralf Brown's Interrupt List (RBIL)
+
+        ; NOTE: AH=03 (Get cursor position and shape)
+        ;       Parameters
+        ;         BH=Page Number
+        ;       Return
+        ;         AX = 0, CH = Start scan line, CL = End scan line, DH = Row, DL = Column 
         mov ah, #0x03    ; read cursor pos
         xor bh, bh
         int 0x10
 
+        ; NOTE: AH=13 (Write string)
+        ;       Parameters
+        ;         AL = Write mode, BH = Page Number, BL = Color, CX = Number of characters in string, DH = Row, DL = Column, ES:BP = Offset of string 
+        ; AL=01
+        ; BH=00
+        ; BL=07
+        ; CX=24 (The number of characters in string is 24)
+        ;   (.byte 13, 10) * 3 -> (2 * 3) = 6 characters
+        ;   "Loading system ..." -> 18 characters
         mov cx, #24
         mov bx, #0x0007    ; page 0, attribute 7 (normal)
         mov bp, #msg1
@@ -97,7 +121,12 @@ go:
         ; ok, we've written the message, now
         ; we want to load the system (at 0x10000)
 
+        ; NOTE: The physical address 0x10000 is calculated by (CS << 4 + IP)
+        ;       So, Code Segment(CS) would be 0x10000 >> 4 = 0x1000
+
+        ; AX=0x1000
         mov ax, #SYSSEG
+        ; ES=0x1000
         mov es, ax        ; segment of 0x010000
         call read_it
         call kill_motor
@@ -157,32 +186,32 @@ end_move:
 ; which is used for the internal hardware interrupts as well. We just
 ; have to reprogram the 8259's, and it isn't fun.
 
-  mov    al,#0x11        ; initialization sequence
-  out    #0x20,al        ; send it to 8259A-1
-  .word    0x00eb,0x00eb        ; jmp $+2, jmp $+2
-  out    #0xA0,al        ; and to 8259A-2
-  .word    0x00eb,0x00eb
-  mov    al,#0x20        ; start of hardware int's (0x20)
-  out    #0x21,al
-  .word    0x00eb,0x00eb
-  mov    al,#0x28        ; start of hardware int's 2 (0x28)
-  out    #0xA1,al
-  .word    0x00eb,0x00eb
-  mov    al,#0x04        ; 8259-1 is master
-  out    #0x21,al
-  .word    0x00eb,0x00eb
-  mov    al,#0x02        ; 8259-2 is slave
-  out    #0xA1,al
-  .word    0x00eb,0x00eb
-  mov    al,#0x01        ; 8086 mode for both
-  out    #0x21,al
-  .word    0x00eb,0x00eb
-  out    #0xA1,al
-  .word    0x00eb,0x00eb
-  mov    al,#0xFF        ; mask off all interrupts for now
-  out    #0x21,al
-  .word    0x00eb,0x00eb
-  out    #0xA1,al
+        mov    al,#0x11        ; initialization sequence
+        out    #0x20,al        ; send it to 8259A-1
+        .word    0x00eb,0x00eb        ; jmp $+2, jmp $+2
+        out    #0xA0,al        ; and to 8259A-2
+        .word    0x00eb,0x00eb
+        mov    al,#0x20        ; start of hardware int's (0x20)
+        out    #0x21,al
+        .word    0x00eb,0x00eb
+        mov    al,#0x28        ; start of hardware int's 2 (0x28)
+        out    #0xA1,al
+        .word    0x00eb,0x00eb
+        mov    al,#0x04        ; 8259-1 is master
+        out    #0x21,al
+        .word    0x00eb,0x00eb
+        mov    al,#0x02        ; 8259-2 is slave
+        out    #0xA1,al
+        .word    0x00eb,0x00eb
+        mov    al,#0x01        ; 8086 mode for both
+        out    #0x21,al
+        .word    0x00eb,0x00eb
+        out    #0xA1,al
+        .word    0x00eb,0x00eb
+        mov    al,#0xFF        ; mask off all interrupts for now
+        out    #0x21,al
+        .word    0x00eb,0x00eb
+        out    #0xA1,al
 
 ; well, that certainly wasn't fun :-(. Hopefully it works, and we don't
 ; need no steenking BIOS anyway (except for the initial loading :-).
