@@ -38,7 +38,6 @@ Image: boot/boot tools/system tools/build
 tools/build: tools/build.c
 	$(CC) $(CFLAGS) \
 	-o tools/build tools/build.c
-	#chmem +65000 tools/build
 
 boot/head.o: boot/head.s
 
@@ -69,14 +68,16 @@ boot/boot:	boot/boot.s tools/system
 	rm -f tmp.s
 	$(LD86) -s -o boot/boot boot/boot.o
 	
-run:
-	qemu-system-i386 -drive format=raw,file=Image,index=0,if=floppy -boot a -hdb hd_oldlinux.img -m 8 -machine pc-i440fx-2.5
+# Working on QEMU 8.2.2, but couldn't debug with GDB stub.
+# Do not use now.
+#run:
+#	qemu-system-i386 -nographic -drive format=raw,file=Image,index=0,if=floppy -boot a -hdb ../emulation/hd_oldlinux.img -m 8 -machine pc-i440fx-2.5
 
-run-curses:
-	qemu-system-i386 -display curses -drive format=raw,file=Image,index=0,if=floppy -boot a -hdb hd_oldlinux.img -m 8 -machine pc-i440fx-2.5
+#run-curses:
+#	qemu-system-i386 -display curses -drive format=raw,file=Image,index=0,if=floppy -boot a -hdb ../emulation/hd_oldlinux.img -m 8 -machine pc-i440fx-2.5
 	
 dump:
-	objdump -D --disassembler-options=intel tools/system > System.dum
+	objdump -D --disassembler-options=intel tools/system > System.dump
 
 clean:
 	rm -f Image System.map tmp_make boot/boot core

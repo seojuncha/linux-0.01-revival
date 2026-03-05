@@ -338,11 +338,11 @@ bad_rt:
         pop ax
         jmp read_track
 
-/*
- * This procedure turns off the floppy drive motor, so
- * that we enter the kernel in a known state, and
- * don't have to worry about it later.
- */
+
+;; This procedure turns off the floppy drive motor, so
+;; that we enter the kernel in a known state, and
+;; don't have to worry about it later.
+
 kill_motor:
         push dx
         mov dx, #0x3f2
