@@ -36,37 +36,53 @@ struct super_block *do_mount(int dev)
         if (!(bh = bread(dev,1)))
                 return NULL;
 
-        *p = *((struct super_block *) bh->b_data);
+        *p = *((struct super_block *)bh->b_data);
         brelse(bh);    /* buffer wait */
 
+        /* 
+         * offset 0x2c10 (11280), 20*512 = 10240, 11280-10240 = 1040, 1040-16(super magic offset) = 1024
+         *  start sector = 20, sector size = 512.
+         *  1st partition start offset: 10240
+         *   10240 + 1024 = 11264
+         *   11264 + 16 = 0x2c10  (super magic)
+         * 
+         * Minix v1
+         *  Block size: 1024B
+         * 1st Block: Boot Block (10240 ~ 11264)
+         * 2nd Block: Super Block (11264 ~ 12288)
+         */
         if (p->s_magic != SUPER_MAGIC) {
                 p->s_dev = 0;
                 return NULL;
         }
 
-        for (i=0;i<I_MAP_SLOTS;i++)
+        for (i = 0; i < I_MAP_SLOTS; i++)
                 p->s_imap[i] = NULL;
-        for (i=0;i<Z_MAP_SLOTS;i++)
+
+        for (i = 0; i < Z_MAP_SLOTS; i++)
                 p->s_zmap[i] = NULL;
 
-        block=2;
-        for (i=0 ; i < p->s_imap_blocks ; i++)
-                if ((p->s_imap[i]=bread(dev,block)))
+        block = 2;
+        for (i = 0; i < p->s_imap_blocks; i++) {
+                if ((p->s_imap[i] = bread(dev, block)))
                         block++;
                 else
                         break;
-        for (i=0 ; i < p->s_zmap_blocks ; i++)
-                if ((p->s_zmap[i]=bread(dev,block)))
-                        block++;
-                else
-                        break;
+        }
 
-        if (block != 2+p->s_imap_blocks+p->s_zmap_blocks) {
-                for(i=0;i<I_MAP_SLOTS;i++)
+        for (i=0; i < p->s_zmap_blocks; i++) {
+                if ((p->s_zmap[i] = bread(dev, block)))
+                        block++;
+                else
+                        break;
+        }
+
+        if (block != 2 + p->s_imap_blocks + p->s_zmap_blocks) {
+                for(i = 0; i < I_MAP_SLOTS; i++)
                         brelse(p->s_imap[i]);
-                for(i=0;i<Z_MAP_SLOTS;i++)
+                for(i = 0; i < Z_MAP_SLOTS; i++)
                         brelse(p->s_zmap[i]);
-                p->s_dev=0;
+                p->s_dev = 0;
                 return NULL;
         }
 
@@ -90,28 +106,36 @@ void mount_root(void)
         if (32 != sizeof(struct d_inode))
                 panic("bad i-node size");
 
-        for(i=0;i<NR_FILE;i++)
+        for(i = 0; i < NR_FILE; i++)
                 file_table[i].f_count=0;
-        for(p = &super_block[0] ; p < &super_block[NR_SUPER] ; p++)
+
+        for(p = &super_block[0]; p < &super_block[NR_SUPER]; p++)
                 p->s_dev = 0;
-        if (!(p=do_mount(ROOT_DEV)))
+
+        if (!(p = do_mount(ROOT_DEV)))
                 panic("Unable to mount root");
-        if (!(mi=iget(ROOT_DEV,1)))
+
+        if (!(mi = iget(ROOT_DEV, 1)))
                 panic("Unable to read root i-node");
+
         mi->i_count += 3 ;	/* NOTE! it is logically used 4 times, not 1 */
         p->s_isup = p->s_imount = mi;
         current->pwd = mi;
         current->root = mi;
-        free=0;
-        i=p->s_nzones;
-        while (-- i >= 0)
-                if (!set_bit(i&8191,p->s_zmap[i>>13]->b_data))
+        free = 0;
+        i = p->s_nzones;
+
+        while (--i >= 0)
+                if (!set_bit(i & 8191, p->s_zmap[i >> 13]->b_data))
                         free++;
+
         printk("%d/%d free blocks\n\r",free,p->s_nzones);
-        free=0;
-        i=p->s_ninodes+1;
-        while (-- i >= 0)
-                if (!set_bit(i&8191,p->s_imap[i>>13]->b_data))
+        free = 0;
+        i = p->s_ninodes + 1;
+
+        while (--i >= 0)
+                if (!set_bit(i & 8191, p->s_imap[i >> 13]->b_data))
                         free++;
+
         printk("%d/%d free inodes\n\r",free,p->s_ninodes);
 }

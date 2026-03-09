@@ -72,16 +72,30 @@
 #define	BBD_ERR		0x80	/* ? */
 
 struct partition {
-	unsigned char boot_ind;		/* 0x80 - active (unused) */
-	unsigned char head;		/* ? */
-	unsigned char sector;		/* ? */
-	unsigned char cyl;		/* ? */
-	unsigned char sys_ind;		/* ? */
-	unsigned char end_head;		/* ? */
-	unsigned char end_sector;	/* ? */
-	unsigned char end_cyl;		/* ? */
-	unsigned int start_sect;	/* starting sector counting from 0 */
-	unsigned int nr_sects;		/* nr of sectors in partition */
+        unsigned char boot_ind;		/* 0x80 - active (unused) */
+        unsigned char head;		/* ? */
+        unsigned char sector;		/* ? */
+        unsigned char cyl;		/* ? */
+        unsigned char sys_ind;		/* ? */
+        unsigned char end_head;		/* ? */
+        unsigned char end_sector;	/* ? */
+        unsigned char end_cyl;		/* ? */
+        unsigned int start_sect;	/* starting sector counting from 0 */
+        unsigned int nr_sects;		/* nr of sectors in partition */
 };
+/*
+ * 16-byte 
+ *   0001 0100 8303 d4ff 1400 0000 ec3f 0100 
+ * boot_ind = 0
+ * head = 1
+ * sector = 1
+ * cyl = 0
+ * sys_ind = 0x83
+ * end_head = 3
+ * end_sector = 0xd4(323)
+ * end_cyl = 0xff(255)
+ * start_sect = 0x14(20)
+ * nr_sects = 0x13fec(81900)
+ */
 
 #endif

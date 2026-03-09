@@ -35,7 +35,7 @@ static struct hd_i_struct{
         int ctl;
 } hd_info[]= { HD_TYPE };
 
-#define NR_HD ((sizeof (hd_info)) / (sizeof(struct hd_i_struct)))
+#define NR_HD ((sizeof (hd_info)) / (sizeof(struct hd_i_struct)))   /* only one */
 
 static struct hd_struct {
         long start_sect;
@@ -140,7 +140,8 @@ int sys_setup(void)
                 return -1;
 
         callable = 0;
-        for (drive = 0 ; drive < NR_HD; drive++) {
+        for (drive = 0; drive < NR_HD; drive++) {
+                /* nr = drive, sec = 1, head = 0, cyl = 0 */
                 rw_abs_hd(READ, drive, 1, 0, 0, (struct buffer_head *)start_buffer);
                 if (!start_buffer->b_uptodate) {
                         printk("Unable to read partition table of drive %d\n\r", drive);
@@ -387,31 +388,35 @@ static void add_request(struct hd_request * req)
                 do_request();
 }
 
-void rw_abs_hd(int rw,unsigned int nr,unsigned int sec,unsigned int head,
-        unsigned int cyl,struct buffer_head * bh)
+void rw_abs_hd(int rw, unsigned int nr, unsigned int sec, unsigned int head, unsigned int cyl, struct buffer_head *bh)
 {
-        struct hd_request * req;
+        struct hd_request *req;
 
-        if (rw!=READ && rw!=WRITE)
+        if (rw != READ && rw != WRITE)
                 panic("Bad hd command, must be R/W");
+
         lock_buffer(bh);
+
 repeat:
-        for (req=0+request ; req<NR_REQUEST+request ; req++)
-                if (req->hd<0)
+        for (req = 0 + request; req < NR_REQUEST + request; req++) {
+                if (req->hd < 0)
                         break;
-        if (req==NR_REQUEST+request) {
+        }
+
+        if (req == NR_REQUEST + request) {
                 sleep_on(&wait_for_request);
                 goto repeat;
         }
-        req->hd=nr;
-        req->nsector=2;
-        req->sector=sec;
-        req->head=head;
-        req->cyl=cyl;
-        req->cmd = ((rw==READ)?WIN_READ:WIN_WRITE);
-        req->bh=bh;
-        req->errors=0;
-        req->next=NULL;
+
+        req->hd = nr;
+        req->nsector = 2;
+        req->sector = sec;
+        req->head = head;
+        req->cyl = cyl;
+        req->cmd = ((rw==READ) ? WIN_READ : WIN_WRITE);
+        req->bh = bh;
+        req->errors = 0;
+        req->next = NULL;
         add_request(req);
         wait_on_buffer(bh);
 }

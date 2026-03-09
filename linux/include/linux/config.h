@@ -31,6 +31,6 @@
  * just love not having a manual.
  */
 
-#define HD_TYPE { 4,20,1024,0,4,0 }
+#define HD_TYPE { 4, 20, 1024, 0, 4, 0 }
 
 #endif
