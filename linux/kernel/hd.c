@@ -121,11 +121,13 @@ void rw_hd(int rw, struct buffer_head * bh)
                 return;
         block += hd[dev].start_sect;
         dev /= 5;
-        __asm__("divl %4":"=a" (block),"=d" (sec):"0" (block),"1" (0),
-                "r" (hd_info[dev].sect));
-        __asm__("divl %4":"=a" (cyl),"=d" (head):"0" (block),"1" (0),
-                "r" (hd_info[dev].head));
-        rw_abs_hd(rw,dev,sec+1,head,cyl,bh);
+        __asm__("divl %4"
+                : "=a"(block), "=d"(sec)
+                : "0"(block), "1"(0), "r"(hd_info[dev].sect));
+        __asm__("divl %4"
+                : "=a"(cyl), "=d"(head)
+                : "0"(block), "1"(0), "r"(hd_info[dev].head));
+        rw_abs_hd(rw, dev, sec + 1, head, cyl, bh);
 }
 
 /* This may be used only once, enforced by 'static int callable' */

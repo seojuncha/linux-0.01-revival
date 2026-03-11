@@ -33,7 +33,7 @@ struct super_block *do_mount(int dev)
         p->s_dev = -1;		/* mark it in use */
         if (p >= &super_block[NR_SUPER])
                 return NULL;
-        if (!(bh = bread(dev,1)))
+        if (!(bh = bread(dev, 1)))
                 return NULL;
 
         *p = *((struct super_block *)bh->b_data);
@@ -129,7 +129,7 @@ void mount_root(void)
                 if (!set_bit(i & 8191, p->s_zmap[i >> 13]->b_data))
                         free++;
 
-        printk("%d/%d free blocks\n\r",free,p->s_nzones);
+        printk("%d/%d free blocks\n\r", free, p->s_nzones);
         free = 0;
         i = p->s_ninodes + 1;
 
@@ -137,5 +137,5 @@ void mount_root(void)
                 if (!set_bit(i & 8191, p->s_imap[i >> 13]->b_data))
                         free++;
 
-        printk("%d/%d free inodes\n\r",free,p->s_ninodes);
+        printk("%d/%d free inodes\n\r", free, p->s_ninodes);
 }
