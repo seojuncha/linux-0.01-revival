@@ -15,11 +15,11 @@ struct dirent{
 };
 
 struct dirent64 {
-  uint64_t d_ino;
-  int64_t d_off;
-  uint16_t d_reclen;
-  unsigned char d_type;
-  char d_name[256];
+        uint64_t d_ino;
+        int64_t d_off;
+        uint16_t d_reclen;
+        unsigned char d_type;
+        char d_name[256];
 };
 
 struct __DIR{
@@ -35,5 +35,3 @@ int closedir (DIR *dir);
 struct dirent *readdir (DIR *dir);
 
 #endif 
-
-

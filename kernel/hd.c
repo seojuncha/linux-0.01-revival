@@ -35,12 +35,12 @@ static struct hd_i_struct{
         int ctl;
 } hd_info[] = { HD_TYPE };
 
-#define NR_HD ((sizeof (hd_info)) / (sizeof(struct hd_i_struct)))   /* only one */
+#define NR_HD ((sizeof(hd_info)) / (sizeof(struct hd_i_struct)))   /* only one */
 
 static struct hd_struct {
         long start_sect;
         long nr_sects;
-} hd[5 * MAX_HD] = {{0,0},};
+} hd[5 * MAX_HD] = { {0, 0}, };
 
 static struct hd_request {
         int hd;		/* -1 if no request */

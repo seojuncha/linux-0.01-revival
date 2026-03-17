@@ -14,10 +14,10 @@
  * won't be any messing with the stack from main(), but we define
  * some others too.
  */
-static inline _syscall0(int,fork)
-static inline _syscall0(int,pause)
-static inline _syscall0(int,setup)
-static inline _syscall0(int,sync)
+static inline _syscall0(int, fork)
+static inline _syscall0(int, pause)
+static inline _syscall0(int, setup)
+static inline _syscall0(int, sync)
 
 #include <linux/tty.h>
 #include <linux/sched.h>
@@ -38,7 +38,7 @@ static char printbuf[1024];
 extern int vsprintf();
 extern void init(void);
 extern void hd_init(void);
-extern long kernel_mktime(struct tm * tm);
+extern long kernel_mktime(struct tm *tm);
 extern long startup_time;
 
 /*
@@ -48,12 +48,12 @@ extern long startup_time;
  * bios-listing reading. Urghh.
  */
 
-#define CMOS_READ(addr) ({ \
-outb_p(0x80|addr,0x70); \
-inb_p(0x71); \
+#define CMOS_READ(addr) ({            \
+        outb_p(0x80 | addr, 0x70);    \
+        inb_p(0x71);                  \
 })
 
-#define BCD_TO_BIN(val) ((val)=((val)&15) + ((val)>>4)*10)
+#define BCD_TO_BIN(val) ((val) = ((val) & 15) + ((val) >> 4) * 10)
 
 static void time_init(void)
 {
@@ -67,6 +67,7 @@ static void time_init(void)
                 time.tm_mon = CMOS_READ(8)-1;
                 time.tm_year = CMOS_READ(9);
         } while (time.tm_sec != CMOS_READ(0));
+
         BCD_TO_BIN(time.tm_sec);
         BCD_TO_BIN(time.tm_min);
         BCD_TO_BIN(time.tm_hour);
@@ -100,7 +101,8 @@ int main(void)		/* This really IS void, no error here. */
  * can run). For task0 'pause()' just means we go check if some other
  * task can run, and if not we return here.
  */
-        for(;;) pause();
+        for(;;)
+                pause();
 
         return 0;
 }
@@ -111,37 +113,41 @@ static int printf(const char *fmt, ...)
         int i;
 
         va_start(args, fmt);
-        write(1,printbuf,i=vsprintf(printbuf, fmt, args));
+        write(1, printbuf, i = vsprintf(printbuf, fmt, args));
         va_end(args);
         return i;
 }
 
-static char * argv[] = { "/bin/sh",NULL };
-static char * envp[] = { "HOME=/root","PATH=/bin","PWD=/", NULL };
+static char *argv[] = { "/bin/sh",NULL };
+static char *envp[] = { "HOME=/root","PATH=/bin","PWD=/", NULL };
 
 void init(void)
 {
-        int i,j;
+        int i, j;
 
         setup();
-        (void) open("/dev/tty0",O_RDWR,0);
-        (void) dup(0);
-        (void) dup(0);
-        printf("%d buffers = %d bytes buffer space\n\r",NR_BUFFERS,
-                NR_BUFFERS*BLOCK_SIZE);
+        (void)open("/dev/tty0",O_RDWR,0);
+        (void)dup(0);
+        (void)dup(0);
+
+        printf("%d buffers = %d bytes buffer space\n\r", NR_BUFFERS, NR_BUFFERS * BLOCK_SIZE);
         printf(" Ok.\n\r");
-        if ((i=fork())<0)
+
+        if ((i = fork()) < 0)
                 printf("Fork failed in init\r\n");
         else if (!i) {
-                close(0);close(1);close(2);
+                close(0);
+                close(1);
+                close(2);
+
                 setsid();
-                (void) open("/dev/tty0",O_RDWR,0);
-                (void) dup(0);
-                (void) dup(0);
-                _exit(execve("/bin/sh",argv,envp));
+                (void)open("/dev/tty0", O_RDWR, 0);
+                (void)dup(0);
+                (void)dup(0);
+                _exit(execve("/bin/sh", argv, envp));
         }
-        j=wait(&i);
-        printf("child %d died with code %04x\n",j,i);
+        j = wait(&i);
+        printf("child %d died with code %04x\n", j, i);
         sync();
         _exit(0);	/* NOTE! _exit, not exit() */
 }

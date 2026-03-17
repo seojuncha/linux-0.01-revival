@@ -1,19 +1,18 @@
 *.o
 tmp_make
 
-linux/boot/boot
-!linux/boot/*.s
+boot/boot
+!boot/*.s
 
-linux/tools/build
-linux/tools/system
-linux/tools/system.bin
+tools/build
+tools/system
+tools/system.bin
 
-linux/lib/lib.a
+lib/lib.a
 
 .vscode
 Image
 System.map
-hd_oldlinux.img
+*.img
 debug.log
 .cache
-compile_commands.json
