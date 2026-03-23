@@ -6,15 +6,15 @@
 #include <linux/kernel.h>
 
 /* set_bit uses setb, as gas doesn't recognize setc */
-#define set_bit(bitnr, addr)                             \
-({                                                       \
-        register int __res;                              \
-        __asm__(                                         \
-                "bt %2, %3\n\t"                          \
-                "setb %%al"                              \
-                : "=a"(__res)                            \
-                : "a"(0), "r"(bitnr), "m"(*(addr)));     \
-        __res;                                           \
+#define set_bit(bitnr, addr)                              \
+({                                                        \
+        register int __res;                               \
+        __asm__ ("bt %2, %3\n\t"                          \
+                 "setb %%al"                              \
+                 : "=a"(__res)                            \
+                 : "a"(0), "r"(bitnr), "m"(*(addr))       \
+                );                                        \
+        __res;                                            \
 })
 
 struct super_block super_block[NR_SUPER];
