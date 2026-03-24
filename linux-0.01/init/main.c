@@ -126,7 +126,7 @@ void init(void)
         int i, j;
 
         setup();
-        (void)open("/dev/tty0",O_RDWR,0);
+        (void)open("/dev/tty0", O_RDWR, 0);
         (void)dup(0);
         (void)dup(0);
 

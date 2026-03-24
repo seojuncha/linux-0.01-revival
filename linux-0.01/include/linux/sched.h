@@ -5,7 +5,7 @@
 #define HZ 100
 
 #define FIRST_TASK task[0]
-#define LAST_TASK task[NR_TASKS-1]
+#define LAST_TASK task[NR_TASKS - 1]
 
 #include <linux/head.h>
 #include <linux/fs.h>
@@ -31,8 +31,8 @@ extern int free_page_tables(unsigned long from, long size);
 extern void sched_init(void);
 extern void schedule(void);
 extern void trap_init(void);
-extern void panic(const char * str);
-extern int tty_write(unsigned minor,char * buf,int count);
+extern void panic(const char *str);
+extern int tty_write(unsigned minor, char *buf, int count);
 
 typedef int (*fn_ptr)();
 

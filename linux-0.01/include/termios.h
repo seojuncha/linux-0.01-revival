@@ -216,7 +216,6 @@ extern int tcflow(int fildes, int action);
 extern int tcflush(int fildes, int queue_selector);
 extern int tcgetattr(int fildes, struct termios *termios_p);
 extern int tcsendbreak(int fildes, int duration);
-extern int tcsetattr(int fildes, int optional_actions,
-        struct termios *termios_p);
+extern int tcsetattr(int fildes, int optional_actions, struct termios *termios_p);
 
 #endif

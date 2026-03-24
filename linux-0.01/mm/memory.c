@@ -11,7 +11,7 @@ int do_exit(long code);
 inline void invalidate()
 {
         int d0;
-        __asm__ __volatile(
+        __asm__ __volatile__ (
                 "movl %%eax, %%cr3"
                 : "=&a" (d0)
                 : "0" (0)
@@ -36,7 +36,7 @@ inline void invalidate()
 inline void copy_page(unsigned long from, unsigned long to)
 {
         int d0, d1, d2;
-        __asm__ __volatile(
+        __asm__ __volatile__ (
                 "cld\n\t"
                 "rep\n\t"
                 "movsl\n\t"
@@ -56,7 +56,7 @@ unsigned long get_free_page(void)
 {
         register unsigned long __res;
 
-        __asm__ __volatile__(
+        __asm__ __volatile__ (
                 "std ; repne ; scasw\n\t"
                 "jne 1f\n\t"
                 "movw $1,2(%%edi)\n\t"
