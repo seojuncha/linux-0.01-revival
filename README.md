@@ -80,11 +80,11 @@ sudo apt install -y \
 ### Run with the pre-built disk image:
 ```bash
 tar xzf hdb.img.tar.gz
-bochs -f bochsrc.txt
+bochs -q -f bochsrc.txt
 ```
 ### Build the disk image from scratch:
 ```bash
-bash create_hdb.sh
+sudo ./create_hdb.sh
 bochs -q -f bochsrc.txt
 ```
 
