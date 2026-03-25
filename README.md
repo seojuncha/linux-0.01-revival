@@ -44,7 +44,6 @@ You can use it directly without building anything.
 
 ### Kernel build dependencies:
 ```bash
-sudo apt update
 sudo apt install -y \
   build-essential \
   gcc-multilib \
