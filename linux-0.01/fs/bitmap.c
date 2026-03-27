@@ -12,49 +12,52 @@ __asm__ (                                                    \
         :: "a"(0), "c"(BLOCK_SIZE / 4), "D"((long)(addr))    \
 )
 
-#define set_bit(nr, addr) ({                  \
-register int res;/* __asm__("ax");*/          \
-__asm__ (                                     \
-        "btsl %2, %3\n\t"                     \
-        "setb %%al"                           \
-        : "=a"(res)                           \
-        : "0"(0), "r"(nr), "m"(*(addr))       \
-);                                            \
-res;                                          \
+#define set_bit(nr, addr)                             \
+({                                                    \
+        register int res;/* __asm__("ax");*/          \
+        __asm__ (                                     \
+                "btsl %2, %3\n\t"                     \
+                "setb %%al"                           \
+                : "=a"(res)                           \
+                : "0"(0), "r"(nr), "m"(*(addr))       \
+        );                                            \
+        res;                                          \
 })
 
-#define clear_bit(nr, addr) ({                \
-register int res;/* __asm__("ax");*/          \
-__asm__ (                                     \
-        "btrl %2, %3\n\t"                     \
-        "setnb %%al"                          \
-        : "=a"(res)                           \
-        : "0"(0), "r"(nr), "m"(*(addr))       \
-);                                            \
-res;                                          \
+#define clear_bit(nr, addr)                           \
+({                                                    \
+        register int res;/* __asm__("ax");*/          \
+        __asm__ (                                     \
+                "btrl %2, %3\n\t"                     \
+                "setnb %%al"                          \
+                : "=a"(res)                           \
+                : "0"(0), "r"(nr), "m"(*(addr))       \
+        );                                            \
+        res;                                          \
 })
 
-#define find_first_zero(addr) ({              \
-int __res;                                    \
-__asm__ (                                     \
-        "cld\n\t"                             \
-        "1:\n\t"                              \
-        "lodsl\n\t"                           \
-        "notl %%eax\n\t"                      \
-        "bsfl %%eax, %%edx\n\t"               \
-        "je 2f\n\t"                           \
-        "addl %%edx, %%ecx\n\t"               \
-        "jmp 3f\n\t"                          \
-        "2:\n\t"                              \
-        "addl $32, %%ecx\n\t"                 \
-        "cmpl $8192, %%ecx\n\t"               \
-        "jl 1b\n\t"                           \
-        "3:\n\t"                              \
-        : "=c"(__res)                         \
-        : "c"(0), "S"(addr)                   \
-        : "ax", "dx"/*,"si"*/                 \
-);                                            \
-__res;                                        \
+#define find_first_zero(addr)                 \
+({                                            \
+        int __res;                            \
+        __asm__ (                             \
+                "cld\n\t"                     \
+                "1:\n\t"                      \
+                "lodsl\n\t"                   \
+                "notl %%eax\n\t"              \
+                "bsfl %%eax, %%edx\n\t"       \
+                "je 2f\n\t"                   \
+                "addl %%edx, %%ecx\n\t"       \
+                "jmp 3f\n\t"                  \
+                "2:\n\t"                      \
+                "addl $32, %%ecx\n\t"         \
+                "cmpl $8192, %%ecx\n\t"       \
+                "jl 1b\n\t"                   \
+                "3:\n\t"                      \
+                : "=c"(__res)                 \
+                : "c"(0), "S"(addr)           \
+                : "ax", "dx"/*,"si"*/         \
+        );                                    \
+        __res;                                \
 })
 
 void free_block(int dev, int block)

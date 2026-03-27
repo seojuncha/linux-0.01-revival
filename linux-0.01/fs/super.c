@@ -9,11 +9,12 @@
 #define set_bit(bitnr, addr)                              \
 ({                                                        \
         register int __res;                               \
-        __asm__ ("bt %2, %3\n\t"                          \
-                 "setb %%al"                              \
-                 : "=a"(__res)                            \
-                 : "a"(0), "r"(bitnr), "m"(*(addr))       \
-                );                                        \
+        __asm__ (                                         \
+                "bt %2, %3\n\t"                           \
+                "setb %%al"                               \
+                : "=a"(__res)                             \
+                : "a"(0), "r"(bitnr), "m"(*(addr))        \
+        );                                                \
         __res;                                            \
 })
 

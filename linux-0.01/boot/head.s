@@ -204,22 +204,22 @@ setup_paging:
 .align 2
 .word 0
 idt_descr:
-  .word 256 * 8 - 1         # idt contains 256 entries
-  .long idt
+        .word 256 * 8 - 1         # idt contains 256 entries
+        .long idt
 
 .align 2
 .word 0
 gdt_descr:
-  .word 256 * 8 - 1         # so does gdt (not that that's any
-  .long gdt             # magic number, but it works for me :^)
+        .word 256 * 8 - 1         # so does gdt (not that that's any
+        .long gdt             # magic number, but it works for me :^)
 
 .align 8
 idt:
-  .fill 256, 8, 0         # idt is uninitialized
+        .fill 256, 8, 0         # idt is uninitialized
 
 gdt:
-  .quad 0x0000000000000000      /* NULL descriptor */
-  .quad 0x00c09a00000007ff      /* 8Mb */
-  .quad 0x00c09200000007ff      /* 8Mb */
-  .quad 0x0000000000000000      /* TEMPORARY - don't use */
-  .fill 252, 8, 0               /* space for LDT's and TSS's etc */
+        .quad 0x0000000000000000      /* NULL descriptor */
+        .quad 0x00c09a00000007ff      /* 8Mb */
+        .quad 0x00c09200000007ff      /* 8Mb */
+        .quad 0x0000000000000000      /* TEMPORARY - don't use */
+        .fill 252, 8, 0               /* space for LDT's and TSS's etc */

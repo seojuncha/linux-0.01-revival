@@ -58,13 +58,15 @@ __attribute__((noinline)) int match(int len, const char *name, struct dir_entry 
                 return 0;
         if (len < NAME_LEN && de->name[len])
                 return 0;
-        __asm__("cld\n\t"
+
+        __asm__ (
+                "cld\n\t"
                 "fs\n\t"
                 "repe cmpsb\n\t"
                 "setz %%al"
                 : "=a"(same)
                 : "0"(0), "S"((long)name), "D"((long)de->name), "c"(len)
-                /*:"cx","di","si"*/);
+        );
         return same;
 }
 

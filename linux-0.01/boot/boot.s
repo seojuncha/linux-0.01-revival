@@ -57,24 +57,14 @@ ENDSEG = SYSSEG + SYSSIZE
 
 entry start
 start:
-        ; AX = BOOTSEG (0x07c0)
         mov ax, #BOOTSEG
-        ; DS = AX (0x07c0)
         mov ds, ax
-        ; AX = INITSEG (0x9000)
         mov ax, #INITSEG
-        ; ES=AX(0x9000)
         mov es, ax
-        ; CX=256 (number of words == 512 bytes)
         mov cx, #256
-        ; SI=0
         sub si, si
-        ; DI=0
         sub di, di
-        ; Repeatedly move word from DS:SI to ES:DI, CX times(256)
-        rep
-        ; Moves [DS:SI] -> [ES:DI], SI and DI increment by 2, repeat CX times (CX decrements to 0)
-        movw                  
+        rep movw
         ; Far jump to go:INITSEG
         ; IP=offset(go), CS=INITSEG (0x9000). All other registers unchanged
         jmpi go, INITSEG
@@ -88,72 +78,47 @@ go:
         mov ss, ax
         mov sp, #0x400        ; arbitrary value >>512
 
-        ; NOTE_1: Now, prepare to print the "Loading system ..."
-        ;       INT 0x10 : Video Input/Output Interrupts
-        ;         AH: Function Code
-        ;         AL, BH, BL, CX, DX: Parameters 
-        ; NOTE_2: Read the Ralf Brown's Interrupt List (RBIL)
-
-        ; NOTE: AH=03 (Get cursor position and shape)
-        ;       Parameters
-        ;         BH=Page Number
-        ;       Return
-        ;         AX = 0, CH = Start scan line, CL = End scan line, DH = Row, DL = Column 
-        mov ah, #0x03    ; read cursor pos
+        mov ah, #0x03         ; read cursor pos
         xor bh, bh
         int 0x10
 
-        ; NOTE: AH=13 (Write string)
-        ;       Parameters
-        ;         AL = Write mode, BH = Page Number, BL = Color, CX = Number of characters in string, DH = Row, DL = Column, ES:BP = Offset of string 
-        ; AL=01
-        ; BH=00
-        ; BL=07
-        ; CX=24 (The number of characters in string is 24)
-        ;   (.byte 13, 10) * 3 -> (2 * 3) = 6 characters
-        ;   "Loading system ..." -> 18 characters
         mov cx, #24
-        mov bx, #0x0007    ; page 0, attribute 7 (normal)
+        mov bx, #0x0007       ; page 0, attribute 7 (normal)
         mov bp, #msg1
-        mov ax, #0x1301    ; write string, move cursor
+        mov ax, #0x1301       ; write string, move cursor
         int 0x10
 
         ; ok, we've written the message, now
         ; we want to load the system (at 0x10000)
 
-        ; NOTE: The physical address 0x10000 is calculated by (CS << 4 + IP)
-        ;       So, Code Segment(CS) would be 0x10000 >> 4 = 0x1000
-
-        ; AX=0x1000
         mov ax, #SYSSEG
-        ; ES=0x1000
-        mov es, ax        ; segment of 0x010000
+        mov es, ax            ; segment of 0x010000
         call read_it
         call kill_motor
 
         ; if the read went well we get current cursor position ans save it for
         ; posterity.
 
-        mov ah, #0x03    ; read cursor pos
+        mov ah, #0x03         ; read cursor pos
         xor bh, bh
-        int 0x10        ; save it in known place, con_init fetches
-        mov [510], dx    ; it from 0x90510.
+        int 0x10              ; save it in known place, con_init fetches
+        mov [510], dx         ; it from 0x90510.
        
         ; now we want to move to protected mode ...
 
-        cli            ; no interrupts allowed !
+        cli                    ; no interrupts allowed !
 
         ; first we move the system to it's rightful place
 
         mov ax, #0x0000
-        cld            ; 'direction'=0, movs moves forward
+        cld                    ; 'direction'=0, movs moves forward
 
 do_move:
-        mov es, ax        ; destination segment
+        mov es, ax             ; destination segment
         add ax, #0x1000
         cmp ax, #0x9000
         jz end_move
-        mov ds, ax        ; source segment
+        mov ds, ax             ; source segment
         sub di, di
         sub si, si
         mov cx, #0x8000
@@ -163,19 +128,21 @@ do_move:
         ; then we load the segment descriptors
 
 end_move:
-        mov ax, cs        ; right, forgot this at first. didn't work :-)
+        mov ax, cs             ; right, forgot this at first. didn't work :-)
         mov ds, ax
-        lidt idt_48        ; load idt with 0,0
-        lgdt gdt_48        ; load gdt with whatever appropriate
+        lidt idt_48            ; load idt with 0,0
+        lgdt gdt_48            ; load gdt with whatever appropriate
 
         ; that was painless, now we enable A20
 
         call empty_8042
-        mov al, #0xD1        ; command write
+        mov al, #0xD1          ; command write
         out #0x64, al
+
         call empty_8042
-        mov al, #0xDF        ; A20 on
+        mov al, #0xDF          ; A20 on
         out #0x60, al
+
         call empty_8042
 
 ; well, that went ok, I hope. Now we have to reprogram the interrupts :-(
@@ -188,28 +155,37 @@ end_move:
 
         mov    al,#0x11        ; initialization sequence
         out    #0x20,al        ; send it to 8259A-1
+
         .word    0x00eb,0x00eb        ; jmp $+2, jmp $+2
         out    #0xA0,al        ; and to 8259A-2
+
         .word    0x00eb,0x00eb
         mov    al,#0x20        ; start of hardware int's (0x20)
         out    #0x21,al
+
         .word    0x00eb,0x00eb
         mov    al,#0x28        ; start of hardware int's 2 (0x28)
         out    #0xA1,al
+
         .word    0x00eb,0x00eb
         mov    al,#0x04        ; 8259-1 is master
         out    #0x21,al
+
         .word    0x00eb,0x00eb
         mov    al,#0x02        ; 8259-2 is slave
         out    #0xA1,al
+
         .word    0x00eb,0x00eb
         mov    al,#0x01        ; 8086 mode for both
         out    #0x21,al
+
         .word    0x00eb,0x00eb
         out    #0xA1,al
+
         .word    0x00eb,0x00eb
         mov    al,#0xFF        ; mask off all interrupts for now
         out    #0x21,al
+
         .word    0x00eb,0x00eb
         out    #0xA1,al
 
@@ -224,16 +200,16 @@ end_move:
 ; absolute address 0x00000, in 32-bit protected mode.
 
         mov ax, #0x0001    ; protected mode (PE) bit
-        lmsw ax        ; This is it!
-        jmpi 0, 8        ; jmp offset 0 of segment 8 (cs)
+        lmsw ax            ; This is it!
+        jmpi 0, 8          ; jmp offset 0 of segment 8 (cs)
 
 ; This routine checks that the keyboard command queue is empty
 ; No timeout is used - if this hangs there is something wrong with
 ; the machine, and we probably couldn't proceed anyway.
 empty_8042:
         .word 0x00eb, 0x00eb
-        in al, #0x64    ; 8042 status port
-        test al, #2        ; is input buffer full?
+        in al, #0x64      ; 8042 status port
+        test al, #2       ; is input buffer full?
         jnz empty_8042    ; yes - loop
         ret
 
@@ -260,7 +236,7 @@ read_it:
 
 die:
         jne die            ; es must be at 64kB boundary
-        xor bx, bx        ; bx is starting address within segment
+        xor bx, bx         ; bx is starting address within segment
 
 rp_read:
         mov ax, es
@@ -356,16 +332,16 @@ gdt:
         .word 0,0,0,0        ; dummy
 
         ; second descriptor
-        .word 0x07FF        ; 8Mb - limit=2047 (2048*4096=8Mb)
-        .word 0x0000        ; base address=0
-        .word 0x9A00        ; code read/exec
-        .word 0x00C0        ; granularity=4096, 386
+        .word 0x07FF         ; 8Mb - limit=2047 (2048*4096=8Mb)
+        .word 0x0000         ; base address=0
+        .word 0x9A00         ; code read/exec
+        .word 0x00C0         ; granularity=4096, 386
 
         ; third descriptor
-        .word 0x07FF        ; 8Mb - limit=2047 (2048*4096=8Mb)
-        .word 0x0000        ; base address=0
-        .word 0x9200        ; data read/write
-        .word 0x00C0        ; granularity=4096, 386
+        .word 0x07FF         ; 8Mb - limit=2047 (2048*4096=8Mb)
+        .word 0x0000         ; base address=0
+        .word 0x9200         ; data read/write
+        .word 0x00C0         ; granularity=4096, 386
 
 idt_48:
         .word 0              ; idt limit=0
@@ -373,7 +349,7 @@ idt_48:
 
 gdt_48:
         .word 0x800          ; gdt limit=2048, 256 GDT entries
-        .word gdt, 0x9        ; gdt base = 0X9xxxx
+        .word gdt, 0x9       ; gdt base = 0X9xxxx
  
 msg1:
         .byte 13, 10

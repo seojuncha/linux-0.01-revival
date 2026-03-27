@@ -70,22 +70,22 @@ static void rw_abs_hd(int rw, unsigned int nr, unsigned int sec, unsigned int he
 void hd_init(void);
 
 #define port_read(port, buf, nr)         \
-__asm__(                                 \
+__asm__ (                                \
         "cld\n\t"                        \
         "rep insw"                       \
-        ::"d"(port), "D"(buf), "c"(nr)   \
+        :: "d"(port), "D"(buf), "c"(nr)  \
 )
 
 #define port_write(port, buf, nr)        \
-__asm__(                                 \
+__asm__ (                                \
         "cld\n\t"                        \
         "rep outsw"                      \
-        ::"d"(port), "S"(buf), "c"(nr)   \
+        :: "d"(port), "S"(buf), "c"(nr)  \
 )
 
 extern void hd_interrupt(void);
 
-static struct task_struct *wait_for_request=NULL;
+static struct task_struct *wait_for_request = NULL;
 
 static inline void lock_buffer(struct buffer_head *bh)
 {
@@ -110,10 +110,10 @@ static inline void wait_on_buffer(struct buffer_head *bh)
         sti();
 }
 
-void rw_hd(int rw, struct buffer_head * bh)
+void rw_hd(int rw, struct buffer_head *bh)
 {
-        unsigned int block,dev;
-        unsigned int sec,head,cyl;
+        unsigned int block, dev;
+        unsigned int sec, head, cyl;
 
         block = bh->b_blocknr << 1;
         dev = MINOR(bh->b_dev);
@@ -121,12 +121,16 @@ void rw_hd(int rw, struct buffer_head * bh)
                 return;
         block += hd[dev].start_sect;
         dev /= 5;
-        __asm__("divl %4"
+        __asm__ (
+                "divl %4"
                 : "=a"(block), "=d"(sec)
-                : "0"(block), "1"(0), "r"(hd_info[dev].sect));
-        __asm__("divl %4"
+                : "0"(block), "1"(0), "r"(hd_info[dev].sect)
+        );
+        __asm__ (
+                "divl %4"
                 : "=a"(cyl), "=d"(head)
-                : "0"(block), "1"(0), "r"(hd_info[dev].head));
+                : "0"(block), "1"(0), "r"(hd_info[dev].head)
+        );
         rw_abs_hd(rw, dev, sec + 1, head, cyl, bh);
 }
 
@@ -160,7 +164,7 @@ int sys_setup(void)
                         hd[i + 5 * drive].nr_sects = p->nr_sects;
                 }
         }
-        printk("Partition table%s ok.\n\r",(NR_HD>1)?"s":"");
+        printk("Partition table%s ok.\n\r", (NR_HD > 1) ? "s" : "");
         mount_root();
         return 0;
 }
@@ -186,7 +190,8 @@ static int win_result(void)
         if ((i & (BUSY_STAT | READY_STAT | WRERR_STAT | SEEK_STAT | ERR_STAT))
                 == (READY_STAT | SEEK_STAT))
                 return(0); /* ok */
-        if (i & 1) i = inb(HD_ERROR);
+        if (i & 1)
+                i = inb(HD_ERROR);
         return 1;
 }
 
@@ -342,6 +347,7 @@ static void do_request(void)
                        this_request->cmd,
                        &write_intr);
                 for(i = 0; i < 3000 && !(r = inb_p(HD_STATUS) & DRQ_STAT); i++) /* nothing */ ;
+
                 if (!r) {
                         reset_hd(this_request->hd);
                         return;
@@ -431,7 +437,7 @@ repeat:
         req->sector = sec;
         req->head = head;
         req->cyl = cyl;
-        req->cmd = ((rw==READ) ? WIN_READ : WIN_WRITE);
+        req->cmd = ((rw == READ) ? WIN_READ : WIN_WRITE);
         req->bh = bh;
         req->errors = 0;
         req->next = NULL;
@@ -451,6 +457,7 @@ void hd_init(void)
                 hd[i * 5].start_sect = 0;
                 hd[i * 5].nr_sects = hd_info[i].head * hd_info[i].sect * hd_info[i].cyl;
         }
+
         set_trap_gate(0x2E, &hd_interrupt);
         outb_p(inb_p(0x21) & 0xfb, 0x21);
         outb(inb_p(0xA1) & 0xbf, 0xA1);

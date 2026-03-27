@@ -31,7 +31,7 @@ extern int sys_close(int fd);
 inline void cp_block(const void *from, void *to, int size)
 {
         int d0, d1, d2;
-        __asm__ __volatile__(
+        __asm__ __volatile__ (
                 "pushl $0x10\n\t"
                 "pushl $0x17\n\t"
                 "pop %%es\n\t"
@@ -45,11 +45,10 @@ inline void cp_block(const void *from, void *to, int size)
         );
 }
 
-typedef struct
-{
+typedef struct {
         unsigned long b_entry;
         unsigned long b_size;     //file size
-}bin_section;
+} bin_section;
 
 
 #include <string.h>
