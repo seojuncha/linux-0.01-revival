@@ -76,14 +76,27 @@ sudo apt install -y \
 ```
 
 ## Quick Start
-### Run with the pre-built disk image:
+### 1. Build the kernel
+```bash
+cd linux-0.01
+make
+cd ..
+```
+`make` generates an `Image` file inside `linux-0.01/`, which is used as the floppy disk image by Bochs.
+
+### 2. Prepare the disk image
+Using the pre-built image:
 ```bash
 tar xzf hdb.img.tar.gz
-bochs -q -f bochsrc.txt
 ```
-### Build the disk image from scratch:
+
+Building from scratch:
 ```bash
 sudo ./create_hdb.sh
+```
+
+### 3. Run
+```bash
 bochs -q -f bochsrc.txt
 ```
 
