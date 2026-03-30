@@ -15,20 +15,13 @@
 
 pg_dir:
 startup_32:
-        # movl (mov Long): forces 32-bit copy
-        # EAX = 0x0000_0010
         movl $0x10, %eax
 
-        # DS, ES, FS, GS = 0x0010
         mov %ax, %ds
         mov %ax, %es
         mov %ax, %fs
         mov %ax, %gs
 
-        # lss (Load Segment Selector): Load far pointer from memory using Stack segment
-        #   stack_start (src) : in kernel/sched.c, 32-bit offset and 16-bit selector
-        #   esp (dst) : 32-bit register
-        # Read 4-byte into ESP, then read 2-byte SS
         lss stack_start, %esp
 
         call setup_idt
@@ -46,35 +39,23 @@ startup_32:
         xorl %eax, %eax
 
 1:
-        # EAX = EAX + 1
         incl %eax               # check that A20 really IS enabled
-        # EAX = 0x0000_0000
         movl %eax, 0x000000
-        # MEM[0x0010_0000] - EAX
         cmpl %eax, 0x100000
 
         je 1b
 
         # Store CR0 to EAX
         movl %cr0, %eax          # check math chip
-
-        # Mask bit[31, 4, 0] of EAX then save it to EAX
-        # CR0[0] = PE bit (Protection mode Enabled)
-        # CR0[4] = ET bit (Presence of of 80387)
-        # CR0[31] = PG bit (Paging Disabled)
         andl $0x80000011, %eax   # Save PG,ET,PE
 
-        # ET bit is set?
         testl $0x10, %eax
 
         jne 1f                   # ET is set - 387 is present
         orl $4, %eax             # else set emulate bit
 
 1:
-        # Restore EAX to CR0
         movl %eax, %cr0
-
-        # Go after_page_tables
         jmp after_page_tables
 
 /*
@@ -89,7 +70,6 @@ startup_32:
  *  written by the page tables.
  */
 setup_idt:
-        # lea: Loads the address of a memory operand into a register.
         lea ignore_int, %edx
         movl $0x00080000, %eax
         movw %dx, %ax            /* selector = 0x0008 = cs */
@@ -129,10 +109,11 @@ pg0:
 .org 0x2000
 pg1:
 
+# This is not used yet, but if you
+# want to expand past 8 Mb, you'll have
+# to use it.
 .org 0x3000
-pg2:            # This is not used yet, but if you
-    # want to expand past 8 Mb, you'll have
-    # to use it.
+pg2:
 
 .org 0x4000
 after_page_tables:
@@ -182,16 +163,16 @@ ignore_int:
 setup_paging:
         movl $1024 * 3, %ecx
         xorl %eax, %eax
-        xorl %edi, %edi                  /* pg_dir is at 0x000 */
+        xorl %edi, %edi                    /* pg_dir is at 0x000 */
         cld; rep; stosl
         movl $pg0 + 7, pg_dir              /* set present bit/user r/w */
-        movl $pg1 + 7, pg_dir + 4            /*  --------- " " --------- */
+        movl $pg1 + 7, pg_dir + 4          /*  --------- " " --------- */
         movl $pg1 + 4092, %edi
-        movl $0x7ff007, %eax             /*  8Mb - 4096 + 7 (r/w user,p) */
+        movl $0x7ff007, %eax               /*  8Mb - 4096 + 7 (r/w user,p) */
         std
 
 1:
-        stosl                   /* fill pages backwards - more efficient :-) */
+        stosl                    /* fill pages backwards - more efficient :-) */
         subl $0x1000, %eax
         jge 1b
         xorl %eax, %eax          /* pg_dir is at 0x0000 */
@@ -199,7 +180,7 @@ setup_paging:
         movl %cr0, %eax
         orl $0x80000000, %eax
         movl %eax, %cr0          /* set paging (PG) bit */
-        ret                     /* this also flushes prefetch-queue */
+        ret                      /* this also flushes prefetch-queue */
 
 .align 2
 .word 0
@@ -211,11 +192,11 @@ idt_descr:
 .word 0
 gdt_descr:
         .word 256 * 8 - 1         # so does gdt (not that that's any
-        .long gdt             # magic number, but it works for me :^)
+        .long gdt                 # magic number, but it works for me :^)
 
 .align 8
 idt:
-        .fill 256, 8, 0         # idt is uninitialized
+        .fill 256, 8, 0           # idt is uninitialized
 
 gdt:
         .quad 0x0000000000000000      /* NULL descriptor */

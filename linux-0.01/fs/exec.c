@@ -112,12 +112,12 @@ static unsigned long copy_strings(int argc, char **argv, unsigned long *page, un
         while (argc-- > 0) {
                 if (!(tmp = (char *)get_fs_long(((unsigned long *)argv) + argc)))
                         panic("argc is wrong");
-                len = 0;		/* remember zero-padding */
+                len = 0;        /* remember zero-padding */
                 do {
                         len++;
                 } while (get_fs_byte(tmp++));
 
-                if (p - len < 0)		/* this shouldn't happen - 128kB */
+                if (p - len < 0)           /* this shouldn't happen - 128kB */
                         return 0;
                 i = ((unsigned)(p-len)) >> 12;
                 while (i<MAX_ARG_PAGES && !page[i]) {
@@ -168,7 +168,7 @@ int is_valid_elf(Elf32_Ehdr *ex)
         if (ex->e_ident[EI_MAG0] != ELFMAG0 || ex->e_ident[EI_MAG1] != ELFMAG1 ||
                 ex->e_ident[EI_MAG2] != ELFMAG2 || ex->e_ident[EI_MAG3] != ELFMAG3){
                 printk("not elf format\n");
-                return 0;	/*not elf format */
+                return 0;       /* not elf format */
         }
 
         if (ex->e_type != ET_EXEC || ex->e_machine != EM_386){
@@ -230,7 +230,7 @@ struct buffer_head* read_file_block(struct m_inode *inode, int block_num)
 
         if (block_num > 512 * 512) {
                 panic("Impossibly long executable");
-                return NULL;	//just to avoid warning compilation
+                return NULL;      /* just to avoid warning compilation */
         }
 
         /* i_zone[8] => array of array block index */
@@ -255,8 +255,8 @@ int copy_section(struct m_inode *inode, Elf32_Off from, Elf32_Addr dest, Elf32_W
 {
         struct buffer_head *bh;
         int block_num = from / BLOCK_SIZE;
-        int block_offset;			//only for 1st block
-        int cp_size;				
+        int block_offset;        /* only for 1st block */
+        int cp_size;	
 
         //read fist block
         block_offset = from % BLOCK_SIZE;
@@ -308,7 +308,7 @@ int load_elf_binary(struct m_inode *inode, struct buffer_head *bh, bin_section *
         int lb = 0;
         struct buffer_head *bht = NULL;
 
-        ex = *((Elf32_Ehdr *)bh->b_data);	/* read exec-header */
+        ex = *((Elf32_Ehdr *)bh->b_data);     /* read exec-header */
 
         /* check header */
         if (!is_valid_elf(&ex)) {
@@ -327,7 +327,7 @@ int load_elf_binary(struct m_inode *inode, struct buffer_head *bh, bin_section *
         while (nsect--) {
                 /* load block where is our table section*/
                 if ((ex.e_shoff + nsect * ex.e_shentsize) / BLOCK_SIZE != lb) {
-                        printk("");	// gcc  bug : removing this line = gcc not happy !!!
+                        printk("");      // gcc  bug : removing this line = gcc not happy !!!
                         lb = (ex.e_shoff + nsect * ex.e_shentsize) / BLOCK_SIZE;
                         if (bht)
                                 brelse(bht);
@@ -382,11 +382,11 @@ int do_execve(unsigned long *eip, long tmp, char *filename, char **argv, char **
 
         if ((0xffff & eip[1]) != 0x000f)
                 panic("execve called from supervisor mode");
-        for (i = 0; i < MAX_ARG_PAGES; i++)	/* clear page-table */
+        for (i = 0; i < MAX_ARG_PAGES; i++)     /* clear page-table */
                 page[i] = 0;
-        if (!(inode = namei(filename)))		/* get executables inode */
+        if (!(inode = namei(filename)))         /* get executables inode */
                 return -ENOENT;
-        if (!S_ISREG(inode->i_mode)) {		/* must be regular file */
+        if (!S_ISREG(inode->i_mode)) {          /* must be regular file */
                 iput(inode);
                 return -EACCES;
         }
@@ -453,8 +453,8 @@ int do_execve(unsigned long *eip, long tmp, char *filename, char **argv, char **
         while (i & 0xfff)
                 put_fs_byte(0, (char *)(i++));
         
-        eip[0] = bs.b_entry;		/* eip, magic happens :-) */
-        eip[3] = p;					/* stack pointer */
+        eip[0] = bs.b_entry;     /* eip, magic happens :-) */
+        eip[3] = p;              /* stack pointer */
 
         return 0;
 }

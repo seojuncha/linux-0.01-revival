@@ -39,7 +39,7 @@ int sys_sync(void)
         int i;
         struct buffer_head *bh;
 
-        sync_inodes();		/* write out inodes into buffers */
+        sync_inodes();            /* write out inodes into buffers */
         bh = start_buffer;
         for (i = 0; i < NR_BUFFERS; i++, bh++) {
                 wait_on_buffer(bh);
@@ -153,8 +153,8 @@ repeat:
         tmp = free_list;
         do {
                 if (!tmp->b_count) {
-                        wait_on_buffer(tmp);	/* we still have to wait */
-                        if (!tmp->b_count)	/* on it, it might be dirty */
+                        wait_on_buffer(tmp);     /* we still have to wait */
+                        if (!tmp->b_count)       /* on it, it might be dirty */
                                 break;
                 }
                 tmp = tmp->b_next_free;
@@ -184,9 +184,9 @@ repeat:
  * added "this" block already, so check for that. Thank God for goto's.
  */
         if (find_buffer(dev, block)) {
-                tmp->b_dev = 0;		/* ok, someone else has beaten us */
-                tmp->b_blocknr = 0;	/* to it - free this block and */
-                tmp->b_count = 0;		/* try again */
+                tmp->b_dev = 0;          /* ok, someone else has beaten us */
+                tmp->b_blocknr = 0;      /* to it - free this block and */
+                tmp->b_count = 0;        /* try again */
                 insert_into_queues(tmp);
                 goto repeat;
         }

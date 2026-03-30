@@ -77,8 +77,10 @@ static void time_init(void)
         startup_time = kernel_mktime(&time);
 }
 
-int main(void)		/* This really IS void, no error here. */
-{			/* The startup routine assumes (well, ...) this */
+/* This really IS void, no error here. 
+   The startup routine assumes (well, ...) this */
+int main(void)
+{
 /*
  * Interrupts are still disabled. Do necessary setups, then
  * enable them
@@ -91,7 +93,7 @@ int main(void)		/* This really IS void, no error here. */
         hd_init();
         sti();
         move_to_user_mode();
-        if (!fork()) {		/* we count on this going ok */
+        if (!fork()) {        /* we count on this going ok */
                 init();
         }
 /*
@@ -149,5 +151,5 @@ void init(void)
         j = wait(&i);
         printf("child %d died with code %04x\n", j, i);
         sync();
-        _exit(0);	/* NOTE! _exit, not exit() */
+        _exit(0);       /* NOTE! _exit, not exit() */
 }

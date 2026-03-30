@@ -67,13 +67,13 @@ extern void rw_hd(int rw, struct buffer_head *bh);
 typedef void (*blk_fn)(int rw, struct buffer_head *bh);
 
 static blk_fn rd_blk[] = {
-        NULL,		/* nodev */
-        NULL,		/* dev mem */
-        NULL,		/* dev fd */
-        rw_hd,		/* dev hd */
-        NULL,		/* dev ttyx */
-        NULL,		/* dev tty */
-        NULL		/* dev lp */
+        NULL,         /* nodev */
+        NULL,         /* dev mem */
+        NULL,         /* dev fd */
+        rw_hd,        /* dev hd */
+        NULL,         /* dev ttyx */
+        NULL,         /* dev tty */
+        NULL          /* dev lp */
 };
 
 void ll_rw_block(int rw, struct buffer_head *bh)
