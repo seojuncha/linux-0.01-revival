@@ -5,16 +5,16 @@
  * the fpu must be properly saved/resored. This hasn't been tested.
  */
 
-.globl divide_error,debug,nmi,int3,overflow,bounds,invalid_op
-.globl device_not_available,double_fault,coprocessor_segment_overrun
-.globl invalid_TSS,segment_not_present,stack_segment
-.globl general_protection,coprocessor_error,reserved
+.globl divide_error, debug, nmi, int3, overflow, bounds, invalid_op
+.globl device_not_available, double_fault, coprocessor_segment_overrun
+.globl invalid_TSS, segment_not_present, stack_segment
+.globl general_protection, coprocessor_error, reserved
 
 divide_error:
         pushl $do_divide_error
 
 no_error_code:
-        xchgl %eax,(%esp)
+        xchgl %eax, (%esp)
         pushl %ebx
         pushl %ecx
         pushl %edx
@@ -24,15 +24,15 @@ no_error_code:
         push %ds
         push %es
         push %fs
-        pushl $0		# "error code"
-        lea 44(%esp),%edx
+        pushl $0            # "error code"
+        lea 44(%esp), %edx
         pushl %edx
-        movl $0x10,%edx
-        mov %dx,%ds
-        mov %dx,%es
-        mov %dx,%fs
+        movl $0x10, %edx
+        mov %dx, %ds
+        mov %dx, %es
+        mov %dx, %fs
         call *%eax
-        addl $8,%esp
+        addl $8, %esp
         pop %fs
         pop %es
         pop %ds
@@ -46,7 +46,7 @@ no_error_code:
         iret
 
 debug:
-        pushl $do_int3		# _do_debug
+        pushl $do_int3          # _do_debug
         jmp no_error_code
 
 nmi:
@@ -76,23 +76,24 @@ math_emulate:
 
 device_not_available:
         pushl %eax
-        movl %cr0,%eax
-        bt $2,%eax			# EM (math emulation bit)
+        movl %cr0, %eax
+        bt $2, %eax                     # EM (math emulation bit)
         jc math_emulate
-        clts				# clear TS so that we can use math
+        clts                            # clear TS so that we can use math
         movl current,%eax
         cmpl last_task_used_math,%eax
-        je 1f				# shouldn't happen really ...
+        je 1f                           # shouldn't happen really ...
         pushl %ecx
         pushl %edx
         push %ds
-        movl $0x10,%eax
-        mov %ax,%ds
+        movl $0x10, %eax
+        mov %ax, %ds
         call math_state_restore
         pop %ds
         popl %edx
         popl %ecx
-1:	popl %eax
+1:
+        popl %eax
         iret
 
 coprocessor_segment_overrun:
@@ -111,8 +112,8 @@ double_fault:
         pushl $do_double_fault
 
 error_code:
-        xchgl %eax,4(%esp)		# error code <-> %eax
-        xchgl %ebx,(%esp)		# &function <-> %ebx
+        xchgl %eax, 4(%esp)             # error code <-> %eax
+        xchgl %ebx, (%esp)              # &function <-> %ebx
         pushl %ecx
         pushl %edx
         pushl %edi
@@ -121,15 +122,15 @@ error_code:
         push %ds
         push %es
         push %fs
-        pushl %eax			# error code
-        lea 44(%esp),%eax		# offset
+        pushl %eax                      # error code
+        lea 44(%esp), %eax              # offset
         pushl %eax
-        movl $0x10,%eax
-        mov %ax,%ds
-        mov %ax,%es
-        mov %ax,%fs
+        movl $0x10, %eax
+        mov %ax, %ds
+        mov %ax, %es
+        mov %ax, %fs
         call *%ebx
-        addl $8,%esp
+        addl $8, %esp
         pop %fs
         pop %es
         pop %ds
@@ -157,4 +158,3 @@ stack_segment:
 general_protection:
         pushl $do_general_protection
         jmp error_code
-
