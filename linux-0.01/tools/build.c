@@ -1,7 +1,7 @@
-#include <stdio.h>	/* fprintf */
-#include <stdlib.h>	/* contains exit */
-#include <sys/types.h>	/* unistd.h needs this */
-#include <unistd.h>	/* contains read/write */
+#include <stdio.h>      /* fprintf */
+#include <stdlib.h>     /* contains exit */
+#include <sys/types.h>  /* unistd.h needs this */
+#include <unistd.h>     /* contains read/write */
 #include <fcntl.h>
 #include <string.h>
 
@@ -34,13 +34,13 @@ int main(int argc, char **argv)
 
         if (read(id, buf, MINIX_HEADER) != MINIX_HEADER)
                 die("Unable to read header of 'boot'");
-        if (((long *)buf)[0]!=0x04100301)
+        if (((long *)buf)[0] != 0x04100301)
                 die("Non-Minix header of 'boot'");
-        if (((long *)buf)[1]!=MINIX_HEADER)
+        if (((long *)buf)[1] != MINIX_HEADER)
                 die("Non-Minix header of 'boot'");
-        if (((long *)buf)[3]!=0)
+        if (((long *)buf)[3] != 0)
                 die("Illegal data segment in 'boot'");
-        if (((long *)buf)[4]!=0)
+        if (((long *)buf)[4] != 0)
                 die("Illegal bss in 'boot'");
         if (((long *)buf)[5] != 0)
                 die("Non-Minix header of 'boot'");
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
         if ((id = open(argv[2], O_RDONLY, 0)) < 0)
                 die("Unable to open 'system'");
 
-        for (i = 0; (c = read(id, buf, sizeof buf)) > 0; i += c )
+        for (i = 0; (c = read(id, buf, sizeof buf)) > 0; i += c)
                 if (write(1, buf, c) != c)
                         die("Write call failed");
 
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
         //write(1,buf,512);	
 
         close(id);
-        fprintf(stderr, "System %d bytes.\n",i);
+        fprintf(stderr, "System %d bytes.\n", i);
 
-        return(0);
+        return 0;
 }

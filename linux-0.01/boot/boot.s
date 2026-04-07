@@ -153,41 +153,41 @@ end_move:
 ; which is used for the internal hardware interrupts as well. We just
 ; have to reprogram the 8259's, and it isn't fun.
 
-        mov    al,#0x11        ; initialization sequence
-        out    #0x20,al        ; send it to 8259A-1
+        mov al, #0x11               ; initialization sequence
+        out #0x20, al               ; send it to 8259A-1
 
-        .word    0x00eb,0x00eb        ; jmp $+2, jmp $+2
-        out    #0xA0,al        ; and to 8259A-2
+        .word 0x00eb, 0x00eb        ; jmp $+2, jmp $+2
+        out #0xA0, al               ; and to 8259A-2
 
-        .word    0x00eb,0x00eb
-        mov    al,#0x20        ; start of hardware int's (0x20)
-        out    #0x21,al
+        .word 0x00eb, 0x00eb
+        mov al, #0x20               ; start of hardware int's (0x20)
+        out #0x21, al
 
-        .word    0x00eb,0x00eb
-        mov    al,#0x28        ; start of hardware int's 2 (0x28)
-        out    #0xA1,al
+        .word 0x00eb, 0x00eb
+        mov al, #0x28               ; start of hardware int's 2 (0x28)
+        out #0xA1, al
 
-        .word    0x00eb,0x00eb
-        mov    al,#0x04        ; 8259-1 is master
-        out    #0x21,al
+        .word 0x00eb, 0x00eb
+        mov al, #0x04               ; 8259-1 is master
+        out #0x21, al
 
-        .word    0x00eb,0x00eb
-        mov    al,#0x02        ; 8259-2 is slave
-        out    #0xA1,al
+        .word 0x00eb, 0x00eb
+        mov al, #0x02               ; 8259-2 is slave
+        out #0xA1, al
 
-        .word    0x00eb,0x00eb
-        mov    al,#0x01        ; 8086 mode for both
-        out    #0x21,al
+        .word 0x00eb, 0x00eb
+        mov al, #0x01               ; 8086 mode for both
+        out #0x21, al
 
-        .word    0x00eb,0x00eb
-        out    #0xA1,al
+        .word 0x00eb, 0x00eb
+        out #0xA1, al
 
-        .word    0x00eb,0x00eb
-        mov    al,#0xFF        ; mask off all interrupts for now
-        out    #0x21,al
+        .word 0x00eb, 0x00eb
+        mov al, #0xFF               ; mask off all interrupts for now
+        out #0x21, al
 
-        .word    0x00eb,0x00eb
-        out    #0xA1,al
+        .word 0x00eb, 0x00eb
+        out #0xA1, al
 
 ; well, that certainly wasn't fun :-(. Hopefully it works, and we don't
 ; need no steenking BIOS anyway (except for the initial loading :-).

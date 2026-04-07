@@ -3,11 +3,11 @@
 
 #include <sys/types.h>
 
-#define _LOW(v)		( (v) & 0377)
-#define _HIGH(v)	( ((v) >> 8) & 0377)
+#define _LOW(v)         ( (v) & 0377)
+#define _HIGH(v)        ( ((v) >> 8) & 0377)
 
 /* options for waitpid, WUNTRACED not supported */
-#define WNOHANG 1
+#define WNOHANG   1
 #define WUNTRACED 2
 
 #define WIFEXITED(s) (!((s)&0xFF))

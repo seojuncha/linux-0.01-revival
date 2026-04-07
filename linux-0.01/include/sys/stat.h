@@ -46,8 +46,8 @@ struct stat64 {
 __extension__ long long	st_size __attribute__((__packed__));
         unsigned long st_blksize;
 
-        unsigned long st_blocks;	/* Number 512-byte blocks allocated. */
-        unsigned long __pad4;		/* future possible st_blocks high bits */
+        unsigned long st_blocks;        /* Number 512-byte blocks allocated. */
+        unsigned long __pad4;           /* future possible st_blocks high bits */
 
         time_t st_atime;
         unsigned long __pad5;
@@ -56,7 +56,7 @@ __extension__ long long	st_size __attribute__((__packed__));
         unsigned long __pad6;
 
         time_t st_ctime;
-        unsigned long __pad7;		/* will be high 32 bits of ctime someday */
+        unsigned long __pad7;           /* will be high 32 bits of ctime someday */
 
 __extension__ unsigned long long st_ino __attribute__((__packed__));
 };
